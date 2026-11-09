@@ -72,11 +72,13 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
-      <button type="button" className="absolute end-4 top-4 rounded-md border border-line bg-card px-3 py-2 text-sm font-semibold" onClick={() => void toggleLanguage()}>
-        {t('language')}
-      </button>
-      <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="mb-6 w-full max-w-sm" />
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-6 pt-[max(1.5rem,env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+      <div className="mb-4 flex w-full max-w-md justify-end">
+        <button type="button" className="min-h-11 rounded-md border border-line bg-card px-3 py-2 text-sm font-semibold" onClick={() => void toggleLanguage()}>
+          {t('language')}
+        </button>
+      </div>
+      <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="mb-6 w-full max-w-xs sm:max-w-sm" />
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-sm">
         <h1 className="text-xl font-semibold text-deep">{needsBootstrap ? t('createAdmin') : t('signIn')}</h1>
         {needsBootstrap && <p className="mt-2 text-sm text-muted">{t('setupLead')}</p>}
@@ -102,7 +104,7 @@ export function LoginPage() {
               <input dir="ltr" type="password" className="mt-1 w-full rounded-md border border-line px-3 py-2" autoComplete="new-password" {...setupForm.register('password')} />
               <FieldError message={setupForm.formState.errors.password?.message} />
             </label>
-            <button type="submit" disabled={pending} className="w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={pending} className="min-h-11 w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
               {t('createAdmin')}
             </button>
           </form>
@@ -118,7 +120,7 @@ export function LoginPage() {
               <input dir="ltr" type="password" className="mt-1 w-full rounded-md border border-line px-3 py-2" autoComplete="current-password" {...loginForm.register('password')} />
               <FieldError message={loginForm.formState.errors.password?.message} />
             </label>
-            <button type="submit" disabled={pending} className="w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
+            <button type="submit" disabled={pending} className="min-h-11 w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
               {t('signIn')}
             </button>
           </form>

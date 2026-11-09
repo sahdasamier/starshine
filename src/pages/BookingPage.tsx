@@ -87,6 +87,7 @@ export function BookingPage() {
   }
 
   async function toggleFlag(pilgrimId: string, field: 'passportReceived' | 'visaIssued' | 'ticketIssued') {
+    if ((field === 'visaIssued' || field === 'ticketIssued') && !meetsHalfPaid(booking!)) return
     const flags = booking!.pilgrims.map((pilgrim) => ({
       id: pilgrim.id,
       passportReceived: pilgrim.id === pilgrimId && field === 'passportReceived' ? !pilgrim.passportReceived : pilgrim.passportReceived,
@@ -152,9 +153,9 @@ export function BookingPage() {
               {canEditHotel ? (
                 <label className="min-w-0 flex-1 text-sm font-medium">
                   {t('hotelName')}
-                  <span className="mt-1 flex gap-2">
+                  <span className="mt-1 flex flex-col gap-2 sm:flex-row">
                     <input className="w-full rounded-md border border-line px-3 py-2" value={hotel} onChange={(event) => setHotel(event.target.value)} />
-                    <button type="button" disabled={pending} className="rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50" onClick={() => void run('setHotel', { hotelName: hotel })}>
+                    <button type="button" disabled={pending} className="min-h-11 shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50" onClick={() => void run('setHotel', { hotelName: hotel })}>
                       {t('save')}
                     </button>
                   </span>
@@ -251,9 +252,9 @@ export function BookingPage() {
               {canEditPaid && (
                 <label className="block text-sm font-medium">
                   {t('amountPaid')}
-                  <span className="mt-1 flex gap-2">
+                  <span className="mt-1 flex flex-col gap-2 sm:flex-row">
                     <input dir="ltr" className="w-full rounded-md border border-line px-3 py-2" value={paid} onChange={(event) => setPaid(event.target.value)} />
-                    <button type="button" disabled={pending} className="rounded-md border border-line px-3 py-2 text-sm font-semibold" onClick={() => void run('setAmountPaid', { amountPaid: paid })}>
+                    <button type="button" disabled={pending} className="min-h-11 shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold" onClick={() => void run('setAmountPaid', { amountPaid: paid })}>
                       {t('save')}
                     </button>
                   </span>
@@ -279,35 +280,35 @@ export function BookingPage() {
                 ) : (
                   <span>{pilgrim.passportReceived ? '✓' : '–'} {t('passportReceived')}</span>
                 )}
-                {canToggleTravel ? (
+                {canToggleTravel && halfPaid ? (
                   <>
                     <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={pilgrim.visaIssued} disabled={pending || !halfPaid} onChange={() => void toggleFlag(pilgrim.id, 'visaIssued')} />
+                      <input type="checkbox" checked={pilgrim.visaIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'visaIssued')} />
                       {t('visaIssued')}
                     </label>
                     <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={pilgrim.ticketIssued} disabled={pending || !halfPaid} onChange={() => void toggleFlag(pilgrim.id, 'ticketIssued')} />
+                      <input type="checkbox" checked={pilgrim.ticketIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'ticketIssued')} />
                       {t('ticketIssued')}
                     </label>
                   </>
                 ) : (
                   <>
-                    <span>{pilgrim.visaIssued ? '✓' : '–'} {t('visaIssued')}</span>
-                    <span>{pilgrim.ticketIssued ? '✓' : '–'} {t('ticketIssued')}</span>
+                    <span className={halfPaid ? '' : 'text-muted'}>{pilgrim.visaIssued ? '✓' : '–'} {t('visaIssued')}</span>
+                    <span className={halfPaid ? '' : 'text-muted'}>{pilgrim.ticketIssued ? '✓' : '–'} {t('ticketIssued')}</span>
                   </>
                 )}
               </span>
             </li>
           ))}
         </ul>
-        {canToggleTravel && !halfPaid && <p className="mt-3 text-sm text-muted">{t('executionLocked')}</p>}
+        {!halfPaid && <p className="mt-3 text-sm text-muted">{t('executionLocked')}</p>}
       </section>
 
       <section className="space-y-3">
         <Banner code={error} />
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
           {canAct(profile.role, 'reception') && booking.stage === 'reception' && (
-            <button type="button" disabled={pending} className="rounded-md bg-gold px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => void run('submitReception')}>
+            <button type="button" disabled={pending} className="min-h-11 rounded-md bg-gold px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => void run('submitReception')}>
               {t('sendAccounting')}
             </button>
           )}
@@ -315,7 +316,7 @@ export function BookingPage() {
             <button
               type="button"
               disabled={pending || total.trim() === ''}
-              className="rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50"
+              className="min-h-11 rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50"
               onClick={() =>
                 void (async () => {
                   setPending(true)
@@ -338,14 +339,14 @@ export function BookingPage() {
             <button
               type="button"
               disabled={pending || !passportsComplete(booking) || !meetsPaymentRule(booking)}
-              className="rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50"
+              className="min-h-11 rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50"
               onClick={() => void run('approve')}
             >
               {t('approve')}
             </button>
           )}
           {canAct(profile.role, 'operations') && booking.stage === 'execution' && (
-            <button type="button" disabled={pending || !halfPaid || !readyToComplete(booking)} className="rounded-md bg-ok px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => setConfirming(true)}>
+            <button type="button" disabled={pending || !halfPaid || !readyToComplete(booking)} className="min-h-11 rounded-md bg-ok px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => setConfirming(true)}>
               {t('complete')}
             </button>
           )}
@@ -365,7 +366,7 @@ export function BookingPage() {
             <button
               type="button"
               disabled={pending || reason.trim() === ''}
-              className="mt-3 rounded-md border border-danger px-4 py-2 text-sm font-semibold text-danger disabled:opacity-50"
+              className="mt-3 min-h-11 w-full rounded-md border border-danger px-4 py-2 text-sm font-semibold text-danger disabled:opacity-50 sm:w-auto"
               onClick={() => void run('returnBooking', { reason })}
             >
               {t('returnAction')} — {t(stageKey(previous))}
@@ -398,11 +399,11 @@ export function BookingPage() {
           <div className="w-full max-w-md rounded-2xl bg-card p-5 shadow-xl">
             <h2 className="text-lg font-semibold">{t('complete')}</h2>
             <p className="mt-2 text-sm text-muted">{t('confirmComplete')}</p>
-            <div className="mt-4 flex justify-end gap-2">
-              <button type="button" className="rounded-md border border-line px-4 py-2 text-sm font-semibold" onClick={() => setConfirming(false)}>
+            <div className="mt-4 grid gap-2 sm:flex sm:justify-end">
+              <button type="button" className="min-h-11 rounded-md border border-line px-4 py-2 text-sm font-semibold" onClick={() => setConfirming(false)}>
                 {t('cancel')}
               </button>
-              <button type="button" disabled={pending} className="rounded-md bg-ok px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void run('complete')}>
+              <button type="button" disabled={pending} className="min-h-11 rounded-md bg-ok px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void run('complete')}>
                 {t('confirm')}
               </button>
             </div>

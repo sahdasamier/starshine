@@ -20,7 +20,7 @@ export function QueuePage() {
     const rows = bookings.filter((booking) => booking.stage !== 'completed')
     return (
       <section className="rounded-2xl border border-line bg-card">
-        <header className="flex items-end justify-between gap-3 border-b border-line px-4 py-4">
+        <header className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-4 py-4">
           <div>
             <p className="text-xs font-semibold tracking-wide text-gold">{t('queue')}</p>
             <h1 className="text-2xl font-semibold text-deep">{t('openFiles')}</h1>
@@ -36,7 +36,7 @@ export function QueuePage() {
 
   return (
     <section className="rounded-2xl border border-line bg-card">
-      <header className="flex items-end justify-between gap-3 border-b border-line px-4 py-4">
+      <header className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-4 py-4">
         <div>
           <p className="text-xs font-semibold tracking-wide text-gold">{t('queue')}</p>
           <h1 className="text-2xl font-semibold text-deep">{t(stageKey(stage))}</h1>

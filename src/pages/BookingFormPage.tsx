@@ -222,7 +222,7 @@ export function BookingFormPage() {
         ))}
       </div>
       <Banner code={error} />
-      <button type="submit" disabled={pending} className="rounded-md bg-gold px-4 py-2 font-semibold text-white disabled:opacity-50">
+      <button type="submit" disabled={pending} className="min-h-11 w-full rounded-md bg-gold px-4 py-2 font-semibold text-white disabled:opacity-50 sm:w-auto">
         {existing ? t('save') : t('submitBooking')}
       </button>
     </form>

@@ -19,7 +19,7 @@ export function SearchPage() {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t('searchPlaceholder')}
-          className="w-full rounded-md border border-line px-3 py-2"
+          className="w-full rounded-md border border-line px-3 py-2 text-base"
         />
       </header>
       {!query.trim() ? null : <BookingTable bookings={results} empty={t('noResults')} />}

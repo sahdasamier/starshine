@@ -121,7 +121,15 @@ export function EmployeesPage() {
           </button>
         </form>
       </section>
-      <section className="overflow-x-auto rounded-2xl border border-line bg-card">
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-deep md:hidden">{t('directory')}</h2>
+        <div className="space-y-3 md:hidden">
+          {rows.map((employee) => (
+            <EmployeeRow key={employee.uid} employee={employee} self={employee.uid === user?.uid} layout="card" />
+          ))}
+        </div>
+      </section>
+      <section className="hidden overflow-x-auto rounded-2xl border border-line bg-card md:block">
         <header className="border-b border-line px-4 py-4">
           <h2 className="text-lg font-semibold text-deep">{t('directory')}</h2>
         </header>
@@ -137,7 +145,7 @@ export function EmployeesPage() {
           </thead>
           <tbody>
             {rows.map((employee) => (
-              <EmployeeRow key={employee.uid} employee={employee} self={employee.uid === user?.uid} />
+              <EmployeeRow key={employee.uid} employee={employee} self={employee.uid === user?.uid} layout="row" />
             ))}
           </tbody>
         </table>
@@ -206,7 +214,7 @@ function PricingPanel() {
   )
 }
 
-function EmployeeRow({ employee, self }: { employee: EmployeeRow; self: boolean }) {
+function EmployeeRow({ employee, self, layout }: { employee: EmployeeRow; self: boolean; layout: 'row' | 'card' }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [displayName, setDisplayName] = useState(employee.displayName)
@@ -283,26 +291,84 @@ function EmployeeRow({ employee, self }: { employee: EmployeeRow; self: boolean 
     }
   }
 
+  const details = open ? (
+    <div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <label className="text-sm font-medium">
+          {t('displayName')}
+          <input className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+        </label>
+        <label className="text-sm font-medium">
+          {t('email')}
+          <input dir="ltr" className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={email} onChange={(event) => setEmail(event.target.value)} />
+        </label>
+        <label className="text-sm font-medium">
+          {t('newPassword')}
+          <input dir="ltr" type="password" className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={password} onChange={(event) => setPassword(event.target.value)} />
+        </label>
+      </div>
+      <p className="mt-2 text-xs text-muted">{t('passwordHint')}</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button type="button" disabled={pending} className="min-h-11 rounded-md bg-deep px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void saveDetails()}>
+          {t('saveEmployee')}
+        </button>
+        <button type="button" disabled={pending || self} className="min-h-11 rounded-md border border-line bg-card px-4 py-2 text-sm font-semibold disabled:opacity-50" onClick={() => void setDisabled(!employee.disabled)}>
+          {employee.disabled ? t('enable') : t('disable')}
+        </button>
+        {saved && <span className="text-sm text-ok">{t('saved')}</span>}
+      </div>
+      <div className="mt-3">
+        <Banner code={error} />
+      </div>
+    </div>
+  ) : null
+
+  const roleSelect = (
+    <>
+      <label className="sr-only" htmlFor={`role-${layout}-${employee.uid}`}>{t('role')}</label>
+      <select
+        id={`role-${layout}-${employee.uid}`}
+        className="w-full rounded-md border border-line bg-card px-2 py-1 md:w-auto"
+        value={role}
+        disabled={pending || self}
+        onChange={(event) => void changeRole(event.target.value as Role)}
+      >
+        {ROLES.map((item) => (
+          <option key={item} value={item}>
+            {t(roleKey(item))}
+          </option>
+        ))}
+      </select>
+    </>
+  )
+
+  if (layout === 'card') {
+    return (
+      <article className="space-y-3 rounded-2xl border border-line bg-card p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="truncate font-medium">{employee.displayName}</p>
+            <p dir="ltr" className="truncate text-start text-sm text-muted">{employee.email}</p>
+          </div>
+          <span className={`shrink-0 text-sm font-semibold ${employee.disabled ? 'text-danger' : 'text-ok'}`}>{employee.disabled ? t('disabled') : t('active')}</span>
+        </div>
+        {roleSelect}
+        {error && !open && <Banner code={error} />}
+        <button type="button" className="min-h-11 font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
+          {open ? t('cancel') : t('manage')}
+        </button>
+        {details}
+      </article>
+    )
+  }
+
   return (
     <>
       <tr className="border-t border-line">
         <td className="px-3 py-3 font-medium">{employee.displayName}</td>
         <td dir="ltr" className="px-3 py-3 text-start">{employee.email}</td>
         <td className="px-3 py-3">
-          <label className="sr-only" htmlFor={`role-${employee.uid}`}>{t('role')}</label>
-          <select
-            id={`role-${employee.uid}`}
-            className="rounded-md border border-line bg-card px-2 py-1"
-            value={role}
-            disabled={pending || self}
-            onChange={(event) => void changeRole(event.target.value as Role)}
-          >
-            {ROLES.map((item) => (
-              <option key={item} value={item}>
-                {t(roleKey(item))}
-              </option>
-            ))}
-          </select>
+          {roleSelect}
           {error && !open && (
             <div className="mt-2">
               <Banner code={error} />
@@ -319,33 +385,7 @@ function EmployeeRow({ employee, self }: { employee: EmployeeRow; self: boolean 
       {open && (
         <tr className="border-t border-line bg-paper">
           <td colSpan={5} className="px-3 py-4">
-            <div className="grid gap-3 md:grid-cols-2">
-              <label className="text-sm font-medium">
-                {t('displayName')}
-                <input className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
-              </label>
-              <label className="text-sm font-medium">
-                {t('email')}
-                <input dir="ltr" className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={email} onChange={(event) => setEmail(event.target.value)} />
-              </label>
-              <label className="text-sm font-medium">
-                {t('newPassword')}
-                <input dir="ltr" type="password" className="mt-1 w-full rounded-md border border-line bg-card px-3 py-2" value={password} onChange={(event) => setPassword(event.target.value)} />
-              </label>
-            </div>
-            <p className="mt-2 text-xs text-muted">{t('passwordHint')}</p>
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button type="button" disabled={pending} className="rounded-md bg-deep px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void saveDetails()}>
-                {t('saveEmployee')}
-              </button>
-              <button type="button" disabled={pending || self} className="rounded-md border border-line bg-card px-4 py-2 text-sm font-semibold disabled:opacity-50" onClick={() => void setDisabled(!employee.disabled)}>
-                {employee.disabled ? t('enable') : t('disable')}
-              </button>
-              {saved && <span className="text-sm text-ok">{t('saved')}</span>}
-            </div>
-            <div className="mt-3">
-              <Banner code={error} />
-            </div>
+            {details}
           </td>
         </tr>
       )}

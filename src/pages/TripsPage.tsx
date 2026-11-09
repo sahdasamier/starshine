@@ -27,17 +27,17 @@ export function TripsPage() {
           <h1 className="text-2xl font-semibold text-deep">{t('trips')}</h1>
           <p className="mt-1 max-w-xl text-sm text-muted">{t('tripsLead')}</p>
         </div>
-        <label className="text-sm font-medium">
+        <label className="w-full text-sm font-medium sm:w-auto">
           {t('tripDate')}
-          <input dir="ltr" type="date" className="mt-1 block rounded-md border border-line bg-card px-3 py-2" value={selected} onChange={(event) => chooseDate(event.target.value)} />
+          <input dir="ltr" type="date" className="mt-1 block w-full rounded-md border border-line bg-card px-3 py-2" value={selected} onChange={(event) => chooseDate(event.target.value)} />
         </label>
       </header>
-      <div className="flex gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:flex">
         {(['upcoming', 'past'] as const).map((item) => (
           <button
             key={item}
             type="button"
-            className={`rounded-md px-4 py-2 text-sm font-semibold ${when === item ? 'bg-deep text-white' : 'border border-line bg-card text-deep'}`}
+            className={`min-h-11 rounded-md px-4 py-2 text-sm font-semibold ${when === item ? 'bg-deep text-white' : 'border border-line bg-card text-deep'}`}
             onClick={() => {
               setWhen(item)
               setPicked('')
@@ -55,12 +55,12 @@ export function TripsPage() {
             {groups.length === 0 ? (
               <p className="px-2 py-6 text-center text-sm text-muted">{t('noTrips')}</p>
             ) : (
-              <ul className="space-y-1">
+              <ul className="flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-1 lg:overflow-visible">
                 {groups.map((group) => (
-                  <li key={group.date}>
+                  <li key={group.date} className="shrink-0 lg:w-full">
                     <button
                       type="button"
-                      className={`flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm ${selected === group.date ? 'bg-deep text-white' : 'hover:bg-paper'}`}
+                      className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm whitespace-nowrap lg:whitespace-normal ${selected === group.date ? 'bg-deep text-white' : 'hover:bg-paper'}`}
                       onClick={() => setPicked(group.date)}
                     >
                       <span className="num font-semibold">{formatDate(group.date)}</span>

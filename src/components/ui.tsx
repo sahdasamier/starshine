@@ -91,7 +91,53 @@ export function BookingTable({
   const rows = [...bookings].sort(compare)
   if (rows.length === 0) return <p className="px-4 py-10 text-center text-muted">{empty}</p>
   return (
-    <div className="overflow-x-auto">
+    <>
+      <ul className="divide-y divide-line md:hidden">
+        {rows.map((booking) => {
+          const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
+          return (
+            <li key={booking.id} className="space-y-3 px-4 py-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="num text-lg font-semibold text-deep">{booking.fileNumber}</p>
+                  <p className="truncate font-medium">{booking.contactName}</p>
+                </div>
+                <Link to={`/bookings/${booking.id}`} className="shrink-0 font-semibold text-blue">
+                  {t('open')}
+                </Link>
+              </div>
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+                <div>
+                  <dt className="text-xs text-muted">{t('stageColumn')}</dt>
+                  <dd>{t(stageKey(booking.stage))}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('phone')}</dt>
+                  <dd className="num">{displayPhone(booking.phone)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('departureDate')}</dt>
+                  <dd className="num">{formatDate(booking.departureDate)}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('paidPercent')}</dt>
+                  <dd className="num">{percent == null ? t('emptyMoney') : `${percent}%`}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('programType')}</dt>
+                  <dd>{t(programKey(booking.programType))}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('paymentPlan')}</dt>
+                  <dd>{t(planKey(booking.paymentPlan))}</dd>
+                </div>
+              </dl>
+              <Marks booking={booking} />
+            </li>
+          )
+        })}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[720px] text-sm">
         <thead className="bg-paper text-start text-muted">
           <tr>
@@ -133,7 +179,8 @@ export function BookingTable({
           })}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   )
 }
 
@@ -142,7 +189,41 @@ export function PassengerTable({ bookings, empty }: { bookings: ClientBooking[];
   const rows = [...bookings].sort(compareBookings).flatMap((booking) => booking.pilgrims.map((pilgrim) => ({ booking, pilgrim })))
   if (rows.length === 0) return <p className="px-4 py-8 text-center text-muted">{empty}</p>
   return (
-    <div className="overflow-x-auto">
+    <>
+      <ul className="divide-y divide-line md:hidden">
+        {rows.map(({ booking, pilgrim }) => (
+          <li key={`${booking.id}-${pilgrim.id}`} className="space-y-2 px-4 py-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{pilgrim.name}</p>
+                <p className="num text-sm text-muted">{booking.fileNumber}</p>
+              </div>
+              <Link to={`/bookings/${booking.id}`} className="shrink-0 font-semibold text-blue">
+                {t('open')}
+              </Link>
+            </div>
+            <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+              <div>
+                <dt className="text-xs text-muted">{t('contactName')}</dt>
+                <dd className="truncate">{booking.contactName}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted">{t('phone')}</dt>
+                <dd className="num">{displayPhone(booking.phone)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted">{t('programType')}</dt>
+                <dd>{t(programKey(booking.programType))}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-muted">{t('stageColumn')}</dt>
+                <dd>{t(stageKey(booking.stage))}</dd>
+              </div>
+            </dl>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
       <table className="w-full min-w-[640px] text-sm">
         <thead className="bg-paper text-start text-muted">
           <tr>
@@ -171,7 +252,8 @@ export function PassengerTable({ bookings, empty }: { bookings: ClientBooking[];
           ))}
         </tbody>
       </table>
-    </div>
+      </div>
+    </>
   )
 }
 
