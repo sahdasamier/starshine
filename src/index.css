@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "IBM Plex Sans Arabic", "Segoe UI", sans-serif;
+  --color-ink: #172033;
+  --color-paper: #f3efe4;
+  --color-card: #fffdf8;
+  --color-blue: #0d5fae;
+  --color-deep: #083968;
+  --color-gold: #9a7b2f;
+  --color-line: #e3d9c4;
+  --color-danger: #8e2d2d;
+  --color-ok: #1c6b43;
+  --color-muted: #5c6776;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
