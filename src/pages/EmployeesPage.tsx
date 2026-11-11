@@ -11,6 +11,7 @@ import { db } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { usePricing } from '../lib/pricing'
 import { useRemoval } from '../components/confirm'
+import { TrashButton } from '../components/icons'
 import { Banner, FieldError, roleKey, tierKey } from '../components/ui'
 
 const createSchema = z.object({
@@ -373,11 +374,7 @@ function EmployeeRow({ employee, self, layout, onRemove }: { employee: EmployeeR
           <button type="button" className="min-h-11 font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
             {open ? t('cancel') : t('manage')}
           </button>
-          {!self && (
-            <button type="button" className="min-h-11 font-semibold text-danger" onClick={onRemove}>
-              {t('removeEmployee')}
-            </button>
-          )}
+          {!self && <TrashButton label={t('removeEmployee')} onClick={onRemove} />}
         </div>
         {details}
       </article>
@@ -403,11 +400,7 @@ function EmployeeRow({ employee, self, layout, onRemove }: { employee: EmployeeR
             <button type="button" className="font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
               {open ? t('cancel') : t('manage')}
             </button>
-            {!self && (
-              <button type="button" className="font-semibold text-danger" onClick={onRemove}>
-                {t('removeEmployee')}
-              </button>
-            )}
+            {!self && <TrashButton label={t('removeEmployee')} onClick={onRemove} />}
           </span>
         </td>
       </tr>

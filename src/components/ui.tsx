@@ -15,6 +15,7 @@ import {
 } from '@shared/domain'
 import type { ClientBooking } from '../lib/bookings'
 import { useI18n, type MessageKey } from '../lib/i18n'
+import { TrashButton } from './icons'
 
 export function Banner({ code }: { code: string | null }) {
   const { t } = useI18n()
@@ -105,11 +106,7 @@ export function BookingTable({
                   <p className="truncate font-medium">{booking.contactName}</p>
                 </div>
                 <span className="flex shrink-0 items-center gap-3">
-                  {onRemove && (
-                    <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking)}>
-                      {t('remove')}
-                    </button>
-                  )}
+                  {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
                   <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
                     {t('open')}
                   </Link>
@@ -178,11 +175,7 @@ export function BookingTable({
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <Marks booking={booking} />
-                    {onRemove && (
-                      <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking)}>
-                        {t('remove')}
-                      </button>
-                    )}
+                    {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
                     <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
                       {t('open')}
                     </Link>
@@ -221,11 +214,7 @@ export function PassengerTable({
                 <p className="num text-sm text-muted">{booking.fileNumber}</p>
               </div>
               <span className="flex shrink-0 items-center gap-3">
-                {onRemove && (
-                  <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking, pilgrim.id)}>
-                    {t('remove')}
-                  </button>
-                )}
+                {onRemove && <TrashButton label={t('removePerson')} onClick={() => onRemove(booking, pilgrim.id)} />}
                 <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
                   {t('open')}
                 </Link>
@@ -274,11 +263,7 @@ export function PassengerTable({
               <td className="px-3 py-3">{t(stageKey(booking.stage))}</td>
               <td className="px-3 py-3 text-end">
                 <span className="inline-flex items-center gap-3">
-                  {onRemove && (
-                    <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking, pilgrim.id)}>
-                      {t('remove')}
-                    </button>
-                  )}
+                  {onRemove && <TrashButton label={t('removePerson')} onClick={() => onRemove(booking, pilgrim.id)} />}
                   <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
                     {t('open')}
                   </Link>

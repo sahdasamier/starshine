@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { homeForRole } from '@shared/domain'
 import { useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
+import { CloseIcon, MenuIcon } from './icons'
 import { roleKey } from './ui'
 
 const desktopLink = ({ isActive }: { isActive: boolean }) =>
@@ -72,12 +73,13 @@ export function Shell() {
           <div className="relative ms-auto xl:hidden" ref={menuRef}>
             <button
               type="button"
-              className="min-h-11 rounded-md border border-line px-3 py-2 text-sm font-semibold text-deep"
+              className="inline-flex size-11 items-center justify-center rounded-md border border-line text-deep"
               aria-expanded={menuOpen}
               aria-controls="site-menu"
+              aria-label={menuOpen ? t('cancel') : t('menu')}
               onClick={() => setMenuOpen((open) => !open)}
             >
-              {menuOpen ? t('cancel') : t('menu')}
+              {menuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
             {menuOpen && (
               <div id="site-menu" className="absolute end-0 z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-card p-2 shadow-lg">

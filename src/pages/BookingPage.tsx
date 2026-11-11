@@ -25,6 +25,7 @@ import { useBookings } from '../lib/bookings'
 import { useI18n } from '../lib/i18n'
 import { usePricing } from '../lib/pricing'
 import { useRemoval } from '../components/confirm'
+import { TrashButton } from '../components/icons'
 import { Banner, Marks, planKey, programKey, roleKey, stageKey, tierKey } from '../components/ui'
 
 export function BookingPage() {
@@ -132,16 +133,14 @@ export function BookingPage() {
         <div className="flex flex-wrap items-center gap-2">
           <Marks booking={booking} />
           {profile.role === 'admin' && (
-            <button
-              type="button"
-              className="min-h-11 rounded-md border border-danger px-4 py-2 text-sm font-semibold text-danger"
+            <TrashButton
+              label={t('removeFile')}
+              className="border border-danger"
               onClick={() => removal.ask(t('removeFile'), t('confirmRemoveFile'), async () => {
                 await call('deleteBooking', { id: booking.id })
                 navigate('/queue')
               })}
-            >
-              {t('removeFile')}
-            </button>
+            />
           )}
         </div>
       </header>
@@ -290,16 +289,13 @@ export function BookingPage() {
               <span className="flex flex-wrap items-center gap-3">
                 <span className="font-medium">{pilgrim.name}</span>
                 {profile.role === 'admin' && (
-                  <button
-                    type="button"
-                    className="text-sm font-semibold text-danger"
+                  <TrashButton
+                    label={t('removePerson')}
                     onClick={() => removal.ask(t('removePerson'), t('confirmRemovePerson'), async () => {
                       const result = await call<{ deleted: boolean }>('removePilgrim', { id: booking.id, pilgrimId: pilgrim.id })
                       if (result.deleted) navigate('/queue')
                     })}
-                  >
-                    {t('removePerson')}
-                  </button>
+                  />
                 )}
               </span>
               <span className="flex flex-wrap gap-4 text-sm">

@@ -8,6 +8,7 @@ import { call, errorCode } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useBookings } from '../lib/bookings'
 import { useI18n } from '../lib/i18n'
+import { TrashButton } from '../components/icons'
 import { Banner, FieldError, planKey, programKey, tierKey } from '../components/ui'
 import { useState } from 'react'
 
@@ -202,14 +203,7 @@ export function BookingFormPage() {
                 <input className="mt-1 w-full rounded-md border border-line px-3 py-2" {...form.register(`pilgrims.${index}.name`)} />
                 <FieldError message={form.formState.errors.pilgrims?.[index]?.name?.message} />
               </label>
-              <button
-                type="button"
-                className="text-sm font-semibold text-danger disabled:opacity-40"
-                disabled={pilgrims.fields.length === 1}
-                onClick={() => pilgrims.remove(index)}
-              >
-                {t('remove')}
-              </button>
+              <TrashButton label={t('remove')} disabled={pilgrims.fields.length === 1} onClick={() => pilgrims.remove(index)} />
             </div>
             <label className="flex items-center justify-between gap-4 rounded-xl border border-gold/40 bg-paper px-4 py-3">
               <span>
