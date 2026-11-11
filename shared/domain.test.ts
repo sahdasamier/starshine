@@ -130,6 +130,28 @@ describe('pipeline', () => {
     expect(() => applyReceptionEdit(booking, draft)).toThrow('stage')
   })
 
+  it('lets an auditor correct any file, including a completed one', () => {
+    const booking = { ...sample(), stage: 'execution' as const, paymentPlan: 'cash' as const, totalPiasters: 10000, paidPiasters: 5000 }
+    const edited = applyReceptionEdit(booking, draft, { anyStage: true })
+    expect(edited.contactName).toBe('Sara Ali')
+    expect(edited.paymentPlan).toBe('installments')
+    expect(edited.stage).toBe('execution')
+    const completed = applyReceptionEdit({ ...booking, stage: 'completed' }, draft, { anyStage: true })
+    expect(completed.stage).toBe('completed')
+    expect(applyHotel({ ...booking, stage: 'execution' }, 'Hilton', { anyStage: true }).hotelName).toBe('Hilton')
+    expect(applyPaid({ ...booking, stage: 'completed' }, 4000, { anyStage: true }).paidPiasters).toBe(4000)
+    expect(() =>
+      applyFlags(booking, booking.pilgrims.map((pilgrim) => ({ id: pilgrim.id, visaIssued: true, ticketIssued: false })), { anyStage: true }),
+    ).not.toThrow()
+    expect(() =>
+      applyFlags(
+        { ...booking, paidPiasters: 1000 },
+        booking.pilgrims.map((pilgrim) => ({ id: pilgrim.id, visaIssued: true, ticketIssued: false })),
+        { anyStage: true },
+      ),
+    ).toThrow('halfPaid')
+  })
+
   it('lets an admin return a file the same way the stage owner can', () => {
     const booking = { ...sample(), stage: 'audit' as const }
     const returned = applyReturn(booking, { displayName: 'Admin', role: 'admin' }, 'تصحيح', '2026-11-07T12:00:00.000Z')

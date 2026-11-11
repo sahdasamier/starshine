@@ -38,7 +38,7 @@ Each employee has one login and one role:
 | Admin | Employee list | Accounts only. An admin does not move bookings. |
 | Reception | Reception queue | Contact, departure date, program type, pilgrim list, and passport flags, only while the booking is in Reception |
 | Accountant | Accounting queue | Total and payment plan, only while the booking is in Accounting. Amount paid, any time after the booking has reached Accounting |
-| Auditor | Audit queue | No fields. Approve or return |
+| Auditor | Audit queue | Edit every field on any file, on a phone or a wide screen. Create a new file. Approve or return |
 | Operations | Execution queue | Visa and ticket flags, only while the booking is in Execution |
 
 An admin who also works a stage uses a second login. Every signed-in employee can open every booking and read its status and details. Actions depend on the role and the booking's current stage, including when the booking was opened from search.
@@ -99,7 +99,7 @@ The booking sits in one stage. Forward and back both move exactly one stage.
 
 Reception creates a booking by submitting it. The booking enters Accounting immediately. Nothing sits half-finished in Reception unless it was returned there. Submit and resubmit both require a contact name, phone, departure date, program type, payment plan, and at least one pilgrim name. The passport flag may be unchecked. The last pilgrim cannot be removed.
 
-Reception can change the contact, the departure date, the program type, the pilgrim list, and the passport flags only while the booking is in Reception. A passport that arrives later is recorded by returning the booking to Reception, checking the flag, and sending it forward again through each stage.
+Reception can change the contact, the departure date, the program type, the pilgrim list, and the passport flags only while the booking is in Reception. The auditor can change every field on any file, including a completed file, from a phone, a tablet, or a wide screen, and can also create a new file. A completed file still cannot move backward. A passport that arrives later can be recorded by the auditor on the open file, or by returning the booking to Reception.
 
 The accountant chooses when to send the booking to Audit. The total must be greater than zero. The amount paid may still be zero. Reception's payment plan can be changed by the accountant only during Accounting. After the booking leaves Accounting, the total and the payment plan stay fixed unless the booking is returned there.
 
@@ -112,7 +112,7 @@ Below that rule, Approve stays disabled. Return stays available.
 
 Operations check visa and ticket on each pilgrim, in either order, and can uncheck them while the booking is in Execution. Those boxes and **Complete** stay locked until the amount paid is at least half the total. **Complete** asks for confirmation. It becomes available only when that half is paid and every pilgrim has both flags checked. Completed means the customer has received the visa and the tickets. Completion freezes the contact, the departure date, the program type, the pilgrim list, and those flags. The booking does not disappear. It stays in the completed list, in All files (the history), and on its departure date in Trips. Every employee can read it. It cannot return to Execution.
 
-The accountant can still change the amount paid on a booking in Audit, Execution, or Completed. That edit leaves the stage where it is. The auditor can change the trip level, the hotel, and the total while the file is in Audit. A file below half paid cannot be approved, and its visa and ticket stay locked.
+The accountant can still change the amount paid on a booking in Audit, Execution, or Completed. That edit leaves the stage where it is. The auditor can change the contact, the pilgrims, the hotel, the trip level, the total, the amount paid, and the payment plan on any file. Visa and ticket stay locked until at least half is paid, including for the auditor. A file below half paid cannot be approved.
 
 A return stores a note and changes the stage. Amounts, pilgrims, and flags stay as they were. The note records the employee's display name, the role they held at that moment, the time in Egypt, the stage it left, the stage it entered, and the reason. The reason is required. Notes stay on the booking, in order, and every role can read them. This list is the only history. The booking does not keep a separate record of who approved it, who completed it, or earlier amounts paid.
 

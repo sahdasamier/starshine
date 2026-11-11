@@ -213,8 +213,9 @@ export function emptyBooking(fileNumber: number, draft: ReceptionDraft): Booking
   }
 }
 
-export function applyReceptionEdit(booking: Booking, draft: ReceptionDraft, options?: { anyStage?: boolean }): Booking {
-  if (!options?.anyStage && booking.stage !== 'reception') throw new DomainError('stage')
+export function applyReceptionEdit(booking: Booking, draft: ReceptionDraft, options?: { anyStage?: boolean; allowOpen?: boolean }): Booking {
+  const stageOk = booking.stage === 'reception' || (options?.allowOpen && booking.stage !== 'completed')
+  if (!options?.anyStage && !stageOk) throw new DomainError('stage')
   const clean = assertReceptionDraft({ ...draft, paymentPlan: options?.anyStage ? draft.paymentPlan : booking.paymentPlan })
   const previous = new Map(booking.pilgrims.map((pilgrim) => [pilgrim.id, pilgrim]))
   return {

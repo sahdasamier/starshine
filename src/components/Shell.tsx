@@ -36,7 +36,7 @@ export function Shell() {
   const home = homeForRole(profile.role)
   const links = [
     { to: '/queue', label: t('queue') },
-    ...(profile.role === 'reception' || profile.role === 'admin' ? [{ to: '/bookings/new', label: t('newBooking') }] : []),
+    ...(profile.role === 'reception' || profile.role === 'auditor' || profile.role === 'admin' ? [{ to: '/bookings/new', label: t('newBooking') }] : []),
     { to: '/trips', label: t('trips') },
     { to: '/history', label: t('archive') },
     { to: '/search', label: t('search') },

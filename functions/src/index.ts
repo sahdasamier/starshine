@@ -215,7 +215,7 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
     }
 
     if (action === 'createBooking') {
-      requireRole(actor, 'reception')
+      if (actor.role !== 'reception' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const draft = parseReceptionDraft(data)
       const id = await db.runTransaction(async (tx) => {
         const counterRef = db.doc('meta/fileCounter')
@@ -244,9 +244,11 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
     const id = text(data, 'id')
 
     if (action === 'updateReception') {
-      requireRole(actor, 'reception')
+      if (actor.role !== 'reception' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const draft = parseReceptionDraft(data)
-      await saveBooking(id, (booking) => applyReceptionEdit(booking, draft, { anyStage: actor.role === 'admin' }))
+      await saveBooking(id, (booking) =>
+        applyReceptionEdit(booking, draft, { anyStage: actor.role === 'admin' || actor.role === 'auditor' }),
+      )
       return { id }
     }
 
@@ -266,7 +268,7 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
       const hotelName = typeof data.hotelName === 'string' ? data.hotelName : ''
       await saveBooking(id, (booking) =>
         applyAccounting(booking, total, plan, { tripLevel, hotelName }, {
-          anyStage: actor.role === 'admin',
+          anyStage: actor.role === 'admin' || actor.role === 'auditor',
           allowAudit: actor.role === 'auditor' || actor.role === 'admin',
         }),
       )
@@ -276,14 +278,14 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
     if (action === 'setHotel') {
       if (actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const hotelName = typeof data.hotelName === 'string' ? data.hotelName : ''
-      await saveBooking(id, (booking) => applyHotel(booking, hotelName, { anyStage: actor.role === 'admin' }))
+      await saveBooking(id, (booking) => applyHotel(booking, hotelName, { anyStage: actor.role === 'admin' || actor.role === 'auditor' }))
       return { id }
     }
 
     if (action === 'setAmountPaid') {
-      requireRole(actor, 'accountant')
+      if (actor.role !== 'accountant' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const paid = parsePoundsToPiasters(text(data, 'amountPaid'))
-      await saveBooking(id, (booking) => applyPaid(booking, paid, { anyStage: actor.role === 'admin' }))
+      await saveBooking(id, (booking) => applyPaid(booking, paid, { anyStage: actor.role === 'admin' || actor.role === 'auditor' }))
       return { id }
     }
 
@@ -310,7 +312,7 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
     }
 
     if (action === 'updateFlags') {
-      requireRole(actor, 'operations')
+      if (actor.role !== 'operations' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       if (!Array.isArray(data.flags)) throw new DomainError('flags')
       const flags = data.flags.map((item) => {
         if (!item || typeof item !== 'object') throw new DomainError('flags')
@@ -323,7 +325,7 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
           ...(typeof flag.passportReceived === 'boolean' ? { passportReceived: flag.passportReceived } : {}),
         }
       })
-      await saveBooking(id, (booking) => applyFlags(booking, flags, { anyStage: actor.role === 'admin' }))
+      await saveBooking(id, (booking) => applyFlags(booking, flags, { anyStage: actor.role === 'admin' || actor.role === 'auditor' }))
       return { id }
     }
 

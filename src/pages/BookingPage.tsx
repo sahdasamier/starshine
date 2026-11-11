@@ -64,13 +64,14 @@ export function BookingPage() {
   const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
   const remaining = booking.totalPiasters == null ? null : booking.totalPiasters - booking.paidPiasters
   const openFile = profile.role === 'admin'
-  const canEditDetails = openFile || (canAct(profile.role, 'reception') && booking.stage === 'reception')
-  const canEditPrice = openFile || (profile.role === 'accountant' && booking.stage === 'accounting') || (profile.role === 'auditor' && booking.stage === 'audit')
-  const canEditHotel = profile.role === 'admin' || (profile.role === 'auditor' && booking.stage === 'audit')
-  const canEditPlan = canAct(profile.role, 'accountant') && (openFile || booking.stage === 'accounting')
-  const canEditPaid = canAct(profile.role, 'accountant') && booking.totalPiasters != null && (openFile || booking.stage !== 'reception')
-  const canTogglePassport = openFile || (canAct(profile.role, 'reception') && booking.stage === 'reception')
-  const canToggleTravel = openFile || (canAct(profile.role, 'operations') && booking.stage === 'execution')
+  const reviewer = profile.role === 'auditor'
+  const canEditDetails = openFile || reviewer || (profile.role === 'reception' && booking.stage === 'reception')
+  const canEditPrice = openFile || reviewer || (profile.role === 'accountant' && booking.stage === 'accounting')
+  const canEditHotel = openFile || reviewer
+  const canEditPlan = openFile || reviewer || (profile.role === 'accountant' && booking.stage === 'accounting')
+  const canEditPaid = (openFile || reviewer || (profile.role === 'accountant' && booking.stage !== 'reception')) && booking.totalPiasters != null
+  const canTogglePassport = openFile || reviewer || (profile.role === 'reception' && booking.stage === 'reception')
+  const canToggleTravel = openFile || reviewer || (profile.role === 'operations' && booking.stage === 'execution')
   const halfPaid = meetsHalfPaid(booking)
   const owner = stageOwner(booking.stage)
   const canReturn = owner != null && canAct(profile.role, owner) && backStage(booking.stage) != null
@@ -102,7 +103,7 @@ export function BookingPage() {
   }
 
   async function togglePassport(pilgrimId: string) {
-    if (openFile) {
+    if (openFile || reviewer) {
       await toggleFlag(pilgrimId, 'passportReceived')
       return
     }
@@ -171,7 +172,7 @@ export function BookingPage() {
                   {t('hotelName')}
                   <span className="mt-1 flex flex-col gap-2 sm:flex-row">
                     <input className="w-full rounded-md border border-line px-3 py-2" value={hotel} onChange={(event) => setHotel(event.target.value)} />
-                    <button type="button" disabled={pending} className="min-h-11 shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50" onClick={() => void run('setHotel', { hotelName: hotel })}>
+                    <button type="button" disabled={pending} className="min-h-11 w-full shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50 sm:w-auto" onClick={() => void run('setHotel', { hotelName: hotel })}>
                       {t('save')}
                     </button>
                   </span>
@@ -189,7 +190,7 @@ export function BookingPage() {
             </div>
           </dl>
           {canEditDetails && (
-            <Link to={`/bookings/${booking.id}/edit`} className="mt-4 inline-block font-semibold text-blue">
+            <Link to={`/bookings/${booking.id}/edit`} className="mt-4 inline-flex min-h-11 items-center font-semibold text-blue">
               {t('edit')}
             </Link>
           )}
@@ -260,7 +261,7 @@ export function BookingPage() {
                       ))}
                     </select>
                   </label>
-                  <button type="button" disabled={pending} className="rounded-md border border-line px-3 py-2 text-sm font-semibold" onClick={() => void run('updateAccounting', { total, paymentPlan: plan, tripLevel: tier, hotelName: hotel })}>
+                  <button type="button" disabled={pending} className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-sm font-semibold sm:w-auto" onClick={() => void run('updateAccounting', { total, paymentPlan: plan, tripLevel: tier, hotelName: hotel })}>
                     {t('save')}
                   </button>
                 </>
@@ -270,7 +271,7 @@ export function BookingPage() {
                   {t('amountPaid')}
                   <span className="mt-1 flex flex-col gap-2 sm:flex-row">
                     <input dir="ltr" className="w-full rounded-md border border-line px-3 py-2" value={paid} onChange={(event) => setPaid(event.target.value)} />
-                    <button type="button" disabled={pending} className="min-h-11 shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold" onClick={() => void run('setAmountPaid', { amountPaid: paid })}>
+                    <button type="button" disabled={pending} className="min-h-11 w-full shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold sm:w-auto" onClick={() => void run('setAmountPaid', { amountPaid: paid })}>
                       {t('save')}
                     </button>
                   </span>
@@ -298,10 +299,10 @@ export function BookingPage() {
                   />
                 )}
               </span>
-              <span className="flex flex-wrap gap-4 text-sm">
+              <span className="grid w-full gap-2 text-sm sm:flex sm:w-auto sm:flex-wrap sm:gap-4">
                 {canTogglePassport ? (
-                  <label className="flex items-center gap-2">
-                    <input type="checkbox" checked={pilgrim.passportReceived} disabled={pending} onChange={() => void togglePassport(pilgrim.id)} />
+                  <label className="flex min-h-11 items-center gap-2">
+                    <input type="checkbox" className="size-5 shrink-0" checked={pilgrim.passportReceived} disabled={pending} onChange={() => void togglePassport(pilgrim.id)} />
                     {t('passportReceived')}
                   </label>
                 ) : (
@@ -309,12 +310,12 @@ export function BookingPage() {
                 )}
                 {canToggleTravel && halfPaid ? (
                   <>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={pilgrim.visaIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'visaIssued')} />
+                    <label className="flex min-h-11 items-center gap-2">
+                      <input type="checkbox" className="size-5 shrink-0" checked={pilgrim.visaIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'visaIssued')} />
                       {t('visaIssued')}
                     </label>
-                    <label className="flex items-center gap-2">
-                      <input type="checkbox" checked={pilgrim.ticketIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'ticketIssued')} />
+                    <label className="flex min-h-11 items-center gap-2">
+                      <input type="checkbox" className="size-5 shrink-0" checked={pilgrim.ticketIssued} disabled={pending} onChange={() => void toggleFlag(pilgrim.id, 'ticketIssued')} />
                       {t('ticketIssued')}
                     </label>
                   </>

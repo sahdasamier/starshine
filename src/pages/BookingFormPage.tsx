@@ -3,7 +3,7 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { PLANS, PROGRAMS, TIERS, canAct, displayPhone, formatDate, normalizePhone, type PaymentPlan } from '@shared/domain'
+import { PLANS, PROGRAMS, TIERS, displayPhone, formatDate, normalizePhone, type PaymentPlan } from '@shared/domain'
 import { call, errorCode } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useBookings } from '../lib/bookings'
@@ -89,9 +89,10 @@ export function BookingFormPage() {
   }, [existing?.id])
 
   if (!profile) return null
-  if (!canAct(profile.role, 'reception')) return <Navigate to="/" replace />
+  const canOpenForm = profile.role === 'admin' || profile.role === 'reception' || profile.role === 'auditor'
+  if (!canOpenForm) return <Navigate to="/" replace />
   if (id && ready && !existing) return <p className="text-muted">{t('err.notFound')}</p>
-  if (existing && existing.stage !== 'reception' && profile.role !== 'admin') return <Navigate to={`/bookings/${existing.id}`} replace />
+  if (existing && profile.role === 'reception' && existing.stage !== 'reception') return <Navigate to={`/bookings/${existing.id}`} replace />
 
   async function onSubmit(values: FormValues) {
     setPending(true)
@@ -152,14 +153,14 @@ export function BookingFormPage() {
         </label>
         <label className="text-sm font-medium">
           {t('paymentPlan')}
-          <select className="mt-1 w-full rounded-md border border-line px-3 py-2" disabled={Boolean(existing) && profile.role !== 'admin'} {...form.register('paymentPlan')}>
+          <select className="mt-1 w-full rounded-md border border-line px-3 py-2" disabled={Boolean(existing) && profile.role !== 'admin' && profile.role !== 'auditor'} {...form.register('paymentPlan')}>
             {PLANS.map((plan) => (
               <option key={plan} value={plan}>
                 {t(planKey(plan as PaymentPlan))}
               </option>
             ))}
           </select>
-          {existing && profile.role !== 'admin' && <span className="mt-1 block text-xs text-muted">{t('planLocked')}</span>}
+          {existing && profile.role !== 'admin' && profile.role !== 'auditor' && <span className="mt-1 block text-xs text-muted">{t('planLocked')}</span>}
         </label>
       </div>
       {/^\d{4}-\d{2}-\d{2}$/.test(departureDate) && (
@@ -197,7 +198,7 @@ export function BookingFormPage() {
         </div>
         {pilgrims.fields.map((field, index) => (
           <div key={field.id} className="space-y-3 rounded-xl border border-line p-3">
-            <div className="flex items-end gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <label className="min-w-0 flex-1 text-sm font-medium">
                 {t('pilgrimName')}
                 <input className="mt-1 w-full rounded-md border border-line px-3 py-2" {...form.register(`pilgrims.${index}.name`)} />
