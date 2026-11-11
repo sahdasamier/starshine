@@ -82,10 +82,12 @@ export function BookingTable({
   bookings,
   empty,
   compare = compareBookings,
+  onRemove,
 }: {
   bookings: ClientBooking[]
   empty: string
   compare?: (left: ClientBooking, right: ClientBooking) => number
+  onRemove?: (booking: ClientBooking) => void
 }) {
   const { t, language } = useI18n()
   const rows = [...bookings].sort(compare)
@@ -102,9 +104,16 @@ export function BookingTable({
                   <p className="num text-lg font-semibold text-deep">{booking.fileNumber}</p>
                   <p className="truncate font-medium">{booking.contactName}</p>
                 </div>
-                <Link to={`/bookings/${booking.id}`} className="shrink-0 font-semibold text-blue">
-                  {t('open')}
-                </Link>
+                <span className="flex shrink-0 items-center gap-3">
+                  {onRemove && (
+                    <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking)}>
+                      {t('remove')}
+                    </button>
+                  )}
+                  <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
+                    {t('open')}
+                  </Link>
+                </span>
               </div>
               <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
                 <div>
@@ -169,6 +178,11 @@ export function BookingTable({
                 <td className="px-3 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <Marks booking={booking} />
+                    {onRemove && (
+                      <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking)}>
+                        {t('remove')}
+                      </button>
+                    )}
                     <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
                       {t('open')}
                     </Link>
@@ -184,7 +198,15 @@ export function BookingTable({
   )
 }
 
-export function PassengerTable({ bookings, empty }: { bookings: ClientBooking[]; empty: string }) {
+export function PassengerTable({
+  bookings,
+  empty,
+  onRemove,
+}: {
+  bookings: ClientBooking[]
+  empty: string
+  onRemove?: (booking: ClientBooking, pilgrimId: string) => void
+}) {
   const { t } = useI18n()
   const rows = [...bookings].sort(compareBookings).flatMap((booking) => booking.pilgrims.map((pilgrim) => ({ booking, pilgrim })))
   if (rows.length === 0) return <p className="px-4 py-8 text-center text-muted">{empty}</p>
@@ -198,9 +220,16 @@ export function PassengerTable({ bookings, empty }: { bookings: ClientBooking[];
                 <p className="truncate font-medium">{pilgrim.name}</p>
                 <p className="num text-sm text-muted">{booking.fileNumber}</p>
               </div>
-              <Link to={`/bookings/${booking.id}`} className="shrink-0 font-semibold text-blue">
-                {t('open')}
-              </Link>
+              <span className="flex shrink-0 items-center gap-3">
+                {onRemove && (
+                  <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking, pilgrim.id)}>
+                    {t('remove')}
+                  </button>
+                )}
+                <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
+                  {t('open')}
+                </Link>
+              </span>
             </div>
             <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
               <div>
@@ -244,9 +273,16 @@ export function PassengerTable({ bookings, empty }: { bookings: ClientBooking[];
               <td className="px-3 py-3">{t(programKey(booking.programType))}</td>
               <td className="px-3 py-3">{t(stageKey(booking.stage))}</td>
               <td className="px-3 py-3 text-end">
-                <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
-                  {t('open')}
-                </Link>
+                <span className="inline-flex items-center gap-3">
+                  {onRemove && (
+                    <button type="button" className="font-semibold text-danger" onClick={() => onRemove(booking, pilgrim.id)}>
+                      {t('remove')}
+                    </button>
+                  )}
+                  <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
+                    {t('open')}
+                  </Link>
+                </span>
               </td>
             </tr>
           ))}

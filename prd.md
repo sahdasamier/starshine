@@ -43,7 +43,7 @@ Each employee has one login and one role:
 
 An admin who also works a stage uses a second login. Every signed-in employee can open every booking and read its status and details. Actions depend on the role and the booking's current stage, including when the booking was opened from search.
 
-Each employee has a display name, shown on return notes and in the employee list. The admin can change the name, email, password, and role, and can disable the account. A disabled employee cannot sign in. The account remains, and past notes keep the name and role they stored at the time. An admin cannot disable their own account or remove their own admin role.
+Each employee has a display name, shown on return notes and in the employee list. The admin can change the name, email, password, and role, can disable the account, and can remove the account. A disabled employee cannot sign in. Removing an employee deletes the login and the directory row. Past notes keep the name and role they stored at the time. An admin cannot disable or remove their own account, and cannot remove their own admin role.
 
 ## 4. The booking
 
@@ -83,7 +83,7 @@ Money on the booking:
 
 The same phone or pilgrim name may appear on more than one booking. The system allows that with no warning.
 
-Bookings are kept permanently. Staff correct them by editing or by returning them. A trip is not a separate record. It is every booking that shares one departure date. The number of people on that trip is the number of pilgrims across those bookings, including bookings that are already completed.
+The admin can remove one pilgrim from a booking, from the open file or from a trip list. Removing the last pilgrim removes the whole file. The admin can also remove a whole file from any list. A removed file number is never reused. Other staff correct a booking by editing or by returning it. A trip is not a separate record. It is every booking that shares one departure date. The number of people on that trip is the number of pilgrims across those bookings, including bookings that are already completed.
 
 ## 5. Pipeline
 
@@ -150,7 +150,6 @@ On the new-file form, and when a file is edited, choosing a departure date shows
 - Revenue, package, or debt reports
 - A customer login
 - Offline use
-- Deleting a booking or an employee account
 - Installment due dates or a payment ledger
 - A price list driven by program type
 - Saved drafts

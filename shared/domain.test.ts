@@ -15,6 +15,7 @@ import {
   groupByDeparture,
   isUpcomingDate,
   emptyBooking,
+  withoutPilgrim,
   formatDate,
   formatMoney,
   matchesQuery,
@@ -195,6 +196,15 @@ describe('pipeline', () => {
     )
     expect(edited.pilgrims).toHaveLength(1)
     expect(edited.pilgrims[0].visaIssued).toBe(true)
+  })
+
+  it('removes one pilgrim and clears the file when the last pilgrim is removed', () => {
+    const booking = sample()
+    const kept = withoutPilgrim(booking, 'b')
+    expect(kept?.pilgrims.map((pilgrim) => pilgrim.id)).toEqual(['a'])
+    expect(booking.pilgrims).toHaveLength(2)
+    expect(withoutPilgrim(kept!, 'a')).toBeNull()
+    expect(() => withoutPilgrim(booking, 'missing')).toThrow('notFound')
   })
 })
 

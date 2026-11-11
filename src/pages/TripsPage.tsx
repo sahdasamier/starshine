@@ -1,12 +1,20 @@
 import { useMemo, useState } from 'react'
 import { cairoToday, formatDate, groupByDeparture, isUpcomingDate, type TripWhen } from '@shared/domain'
-import { useBookings } from '../lib/bookings'
+import { call } from '../lib/api'
+import { useAuth } from '../lib/auth'
+import { useBookings, type ClientBooking } from '../lib/bookings'
 import { useI18n } from '../lib/i18n'
+import { useRemoval } from '../components/confirm'
 import { PassengerTable } from '../components/ui'
 
 export function TripsPage() {
+  const { profile } = useAuth()
   const { bookings, ready } = useBookings()
   const { t } = useI18n()
+  const removal = useRemoval()
+  const removePerson = profile?.role === 'admin'
+    ? (booking: ClientBooking, pilgrimId: string) => removal.ask(t('removePerson'), t('confirmRemovePerson'), () => call('removePilgrim', { id: booking.id, pilgrimId }))
+    : undefined
   const today = cairoToday()
   const [when, setWhen] = useState<TripWhen>('upcoming')
   const [picked, setPicked] = useState('')
@@ -83,7 +91,8 @@ export function TripsPage() {
                 {t('fileCount')} <span className="num font-semibold text-deep">{selected ? manifest.length : 0}</span>
               </p>
             </header>
-            <PassengerTable bookings={manifest} empty={t('noPassengers')} />
+            <PassengerTable bookings={manifest} empty={t('noPassengers')} onRemove={removePerson} />
+            {removal.dialog}
           </div>
         </div>
       )}

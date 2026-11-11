@@ -1,12 +1,20 @@
 import { useState } from 'react'
 import { compareBookingsRecent } from '@shared/domain'
+import { call } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { useBookings } from '../lib/bookings'
 import { useI18n } from '../lib/i18n'
+import { useRemoval } from '../components/confirm'
 import { BookingTable } from '../components/ui'
 
 export function HistoryPage() {
+  const { profile } = useAuth()
   const { bookings, ready } = useBookings()
   const { t } = useI18n()
+  const removal = useRemoval()
+  const removeFile = profile?.role === 'admin'
+    ? (booking: { id: string }) => removal.ask(t('removeFile'), t('confirmRemoveFile'), () => call('deleteBooking', { id: booking.id }))
+    : undefined
   const [date, setDate] = useState('')
   const rows = date ? bookings.filter((booking) => booking.departureDate === date) : bookings
 
@@ -23,7 +31,8 @@ export function HistoryPage() {
           <input dir="ltr" type="date" className="mt-1 block w-full rounded-md border border-line bg-card px-3 py-2" value={date} onChange={(event) => setDate(event.target.value)} />
         </label>
       </header>
-      {ready ? <BookingTable bookings={rows} empty={t('noResults')} compare={compareBookingsRecent} /> : <p className="px-4 py-10 text-center text-muted">{t('loading')}</p>}
+      {ready ? <BookingTable bookings={rows} empty={t('noResults')} compare={compareBookingsRecent} onRemove={removeFile} /> : <p className="px-4 py-10 text-center text-muted">{t('loading')}</p>}
+      {removal.dialog}
     </section>
   )
 }

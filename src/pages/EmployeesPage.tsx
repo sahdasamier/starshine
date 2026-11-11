@@ -10,6 +10,7 @@ import { useAuth, type Profile } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { usePricing } from '../lib/pricing'
+import { useRemoval } from '../components/confirm'
 import { Banner, FieldError, roleKey, tierKey } from '../components/ui'
 
 const createSchema = z.object({
@@ -60,6 +61,7 @@ export function EmployeesPage() {
     }
   }
 
+  const removal = useRemoval()
   const active = rows.filter((employee) => !employee.disabled).length
 
   return (
@@ -125,7 +127,13 @@ export function EmployeesPage() {
         <h2 className="mb-3 text-lg font-semibold text-deep md:hidden">{t('directory')}</h2>
         <div className="space-y-3 md:hidden">
           {rows.map((employee) => (
-            <EmployeeRow key={employee.uid} employee={employee} self={employee.uid === user?.uid} layout="card" />
+            <EmployeeRow
+              key={employee.uid}
+              employee={employee}
+              self={employee.uid === user?.uid}
+              layout="card"
+              onRemove={() => removal.ask(t('removeEmployee'), t('confirmRemoveEmployee'), () => call('deleteEmployee', { uid: employee.uid }))}
+            />
           ))}
         </div>
       </section>
@@ -145,11 +153,18 @@ export function EmployeesPage() {
           </thead>
           <tbody>
             {rows.map((employee) => (
-              <EmployeeRow key={employee.uid} employee={employee} self={employee.uid === user?.uid} layout="row" />
+              <EmployeeRow
+                key={employee.uid}
+                employee={employee}
+                self={employee.uid === user?.uid}
+                layout="row"
+                onRemove={() => removal.ask(t('removeEmployee'), t('confirmRemoveEmployee'), () => call('deleteEmployee', { uid: employee.uid }))}
+              />
             ))}
           </tbody>
         </table>
       </section>
+      {removal.dialog}
     </div>
   )
 }
@@ -214,7 +229,7 @@ function PricingPanel() {
   )
 }
 
-function EmployeeRow({ employee, self, layout }: { employee: EmployeeRow; self: boolean; layout: 'row' | 'card' }) {
+function EmployeeRow({ employee, self, layout, onRemove }: { employee: EmployeeRow; self: boolean; layout: 'row' | 'card'; onRemove: () => void }) {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [displayName, setDisplayName] = useState(employee.displayName)
@@ -354,9 +369,16 @@ function EmployeeRow({ employee, self, layout }: { employee: EmployeeRow; self: 
         </div>
         {roleSelect}
         {error && !open && <Banner code={error} />}
-        <button type="button" className="min-h-11 font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
-          {open ? t('cancel') : t('manage')}
-        </button>
+        <div className="flex flex-wrap gap-4">
+          <button type="button" className="min-h-11 font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
+            {open ? t('cancel') : t('manage')}
+          </button>
+          {!self && (
+            <button type="button" className="min-h-11 font-semibold text-danger" onClick={onRemove}>
+              {t('removeEmployee')}
+            </button>
+          )}
+        </div>
         {details}
       </article>
     )
@@ -377,9 +399,16 @@ function EmployeeRow({ employee, self, layout }: { employee: EmployeeRow; self: 
         </td>
         <td className={`px-3 py-3 font-semibold ${employee.disabled ? 'text-danger' : 'text-ok'}`}>{employee.disabled ? t('disabled') : t('active')}</td>
         <td className="px-3 py-3 text-end">
-          <button type="button" className="font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
-            {open ? t('cancel') : t('manage')}
-          </button>
+          <span className="inline-flex items-center gap-3">
+            <button type="button" className="font-semibold text-blue" onClick={() => setOpen((value) => !value)}>
+              {open ? t('cancel') : t('manage')}
+            </button>
+            {!self && (
+              <button type="button" className="font-semibold text-danger" onClick={onRemove}>
+                {t('removeEmployee')}
+              </button>
+            )}
+          </span>
         </td>
       </tr>
       {open && (

@@ -23,6 +23,7 @@ import {
   isRole,
   isTier,
   normalizeBooking,
+  withoutPilgrim,
   parsePoundsToPiasters,
   parseReceptionDraft,
   stageOwner,
@@ -200,6 +201,19 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
       return { uid }
     }
 
+    if (action === 'deleteEmployee') {
+      requireRole(actor, 'admin')
+      const uid = text(data, 'uid')
+      if (uid === actor.uid) throw new DomainError('selfDelete')
+      const snap = await db.doc(`users/${uid}`).get()
+      if (!snap.exists) throw new DomainError('notFound')
+      await db.doc(`users/${uid}`).delete()
+      await auth.deleteUser(uid).catch((error: { code?: string }) => {
+        if (error.code !== 'auth/user-not-found') throw error
+      })
+      return { uid }
+    }
+
     if (action === 'createBooking') {
       requireRole(actor, 'reception')
       const draft = parseReceptionDraft(data)
@@ -311,6 +325,36 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
       })
       await saveBooking(id, (booking) => applyFlags(booking, flags, { anyStage: actor.role === 'admin' }))
       return { id }
+    }
+
+    if (action === 'deleteBooking') {
+      requireRole(actor, 'admin')
+      const ref = db.collection('bookings').doc(id)
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref)
+        if (!snap.exists) throw new DomainError('notFound')
+        tx.delete(ref)
+      })
+      return { id }
+    }
+
+    if (action === 'removePilgrim') {
+      requireRole(actor, 'admin')
+      const pilgrimId = text(data, 'pilgrimId')
+      const ref = db.collection('bookings').doc(id)
+      let deleted = false
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref)
+        if (!snap.exists) throw new DomainError('notFound')
+        const next = withoutPilgrim(normalizeBooking(snap.data() as Booking), pilgrimId)
+        if (!next) {
+          tx.delete(ref)
+          deleted = true
+          return
+        }
+        tx.set(ref, next)
+      })
+      return { id, deleted }
     }
 
     if (action === 'complete') {

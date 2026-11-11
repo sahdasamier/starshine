@@ -436,6 +436,13 @@ export function applyFlags(
   }
 }
 
+export function withoutPilgrim(booking: Booking, pilgrimId: string): Booking | null {
+  if (!booking.pilgrims.some((pilgrim) => pilgrim.id === pilgrimId)) throw new DomainError('notFound')
+  const pilgrims = booking.pilgrims.filter((pilgrim) => pilgrim.id !== pilgrimId)
+  if (pilgrims.length === 0) return null
+  return { ...booking, pilgrims }
+}
+
 export function applyComplete(booking: Booking): Booking {
   if (booking.stage !== 'execution') throw new DomainError('stage')
   if (!meetsHalfPaid(booking)) throw new DomainError('halfPaid')
