@@ -1,21 +1,97 @@
 export const ROLES = ['admin', 'reception', 'accountant', 'auditor', 'operations'] as const
 export const STAGES = ['reception', 'accounting', 'audit', 'execution', 'completed'] as const
 export const PROGRAMS = ['double', 'triple', 'quad', 'quint'] as const
+export const CATEGORIES = ['infant', 'child', 'minor', 'adult'] as const
+export const GENDERS = ['man', 'woman'] as const
+export const SEASONS = ['shaban', 'ramadan', 'last10'] as const
+export const BUILTIN_DATES = ['2026-09-30', '2026-10-14', '2026-10-28', '2026-11-11', '2026-11-25', '2026-12-09', '2026-12-23', '2027-01-06', '2027-01-20'] as const
+export const TRIP_OTHER = 'other'
 export const PLANS = ['cash', 'installments'] as const
-export const TIERS = ['standard', 'premium', 'vip'] as const
+export const TIERS = ['farBus', 'close', 'closeVip'] as const
+export const BOOKING_STATUSES = ['confirmed', 'withdrawn'] as const
+export const REFERRAL_BUILTIN = ['marketer', 'office'] as const
+export const REFERRAL_OTHER = 'other'
 export const LANGUAGES = ['ar', 'en'] as const
+
+export interface UmrahProgram {
+  id: string
+  nameAr: string
+  nameEn: string
+  makkahAr: string
+  makkahEn: string
+  madinahAr: string
+  madinahEn: string
+  prices: { quad: number; triple: number; double: number }
+}
+
+export const UMRAH_PROGRAMS: UmrahProgram[] = [
+  {
+    id: 'prog_1',
+    nameAr: 'برنامج 1 (4 نجوم) — فندق 21 (باص)',
+    nameEn: 'Program 1 (4-Star) - Hotel 21 (Bus)',
+    makkahAr: 'فندق 21',
+    makkahEn: 'Hotel 21',
+    madinahAr: 'مجموعة الزهراء',
+    madinahEn: 'Al Zahraa Group',
+    prices: { quad: 44000, triple: 47500, double: 51500 },
+  },
+  {
+    id: 'prog_2',
+    nameAr: 'برنامج 2 (5 نجوم) — VOCO (باص / مشي 20 متر)',
+    nameEn: 'Program 2 (5-Star) - VOCO (Bus / 20m Walk)',
+    makkahAr: 'VOCO',
+    makkahEn: 'VOCO',
+    madinahAr: 'مجموعة الزهراء',
+    madinahEn: 'Al Zahraa Group',
+    prices: { quad: 47500, triple: 51500, double: 58500 },
+  },
+  {
+    id: 'prog_3',
+    nameAr: 'برنامج 3 — أجياد / إبراهيم الخليل (مشي)',
+    nameEn: 'Program 3 - Ajyad / Ibrahim Al Khalil (Walk)',
+    makkahAr: 'أجياد (بئر بليلة) / إبراهيم الخليل',
+    makkahEn: 'Ajyad (Beer Balila) / Ibrahim Al Khalil',
+    madinahAr: 'مجموعة الزهراء',
+    madinahEn: 'Al Zahraa Group',
+    prices: { quad: 49500, triple: 54500, double: 62500 },
+  },
+  {
+    id: 'prog_4',
+    nameAr: 'برنامج 4 (5 نجوم) — الشهداء (قريب جداً)',
+    nameEn: 'Program 4 (5-Star) - Al Shuhada (Very Close)',
+    makkahAr: 'الشهداء',
+    makkahEn: 'Al Shuhada',
+    madinahAr: 'مجموعة الزهراء',
+    madinahEn: 'Al Zahraa Group',
+    prices: { quad: 64500, triple: 73500, double: 89500 },
+  },
+  {
+    id: 'prog_5',
+    nameAr: 'برنامج 5 (5 نجوم) — برستيج / الصفوة / موفنبيك',
+    nameEn: 'Program 5 (5-Star) - Prestige/Safwa/Movenpick',
+    makkahAr: 'برستيج / الصفوة / موفنبيك',
+    makkahEn: 'Prestige / Al Safwa / Movenpick',
+    madinahAr: 'مجموعة الزهراء',
+    madinahEn: 'Al Zahraa Group',
+    prices: { quad: 83500, triple: 95500, double: 123500 },
+  },
+]
 
 export type Role = (typeof ROLES)[number]
 export type Stage = (typeof STAGES)[number]
 export type ProgramType = (typeof PROGRAMS)[number]
+export type AgeCategory = (typeof CATEGORIES)[number]
+export type Gender = (typeof GENDERS)[number]
+export type Season = (typeof SEASONS)[number]
 export type PaymentPlan = (typeof PLANS)[number]
 export type TripLevel = (typeof TIERS)[number]
+export type BookingStatus = (typeof BOOKING_STATUSES)[number]
 export type Language = (typeof LANGUAGES)[number]
 
 export interface Pricing {
-  standard: number | null
-  premium: number | null
-  vip: number | null
+  farBus: number | null
+  close: number | null
+  closeVip: number | null
 }
 
 export class DomainError extends Error {
@@ -31,6 +107,11 @@ export class DomainError extends Error {
 export interface Pilgrim {
   id: string
   name: string
+  category: AgeCategory
+  gender: Gender | ''
+  militaryCompleted: boolean | null
+  papersConfirmed: boolean
+  guardianName: string
   passportReceived: boolean
   visaIssued: boolean
   ticketIssued: boolean
@@ -53,7 +134,15 @@ export interface Booking {
   programType: ProgramType
   paymentPlan: PaymentPlan
   tripLevel: TripLevel | null
+  packageId: string
   hotelName: string
+  referralType: string
+  referrerName: string
+  bookingStatus: BookingStatus
+  customerNotes: string
+  internalNotes: string
+  createdByName: string
+  enteredById: string
   stage: Stage
   totalPiasters: number | null
   paidPiasters: number
@@ -68,7 +157,23 @@ export interface ReceptionDraft {
   programType: ProgramType
   paymentPlan: PaymentPlan
   tripLevel: TripLevel
-  pilgrims: { id: string; name: string; passportReceived: boolean }[]
+  packageId: string
+  referralType: string
+  referrerName: string
+  bookingStatus: BookingStatus
+  customerNotes: string
+  internalNotes: string
+  enteredById: string
+  pilgrims: {
+    id: string
+    name: string
+    category: AgeCategory
+    gender: Gender | ''
+    militaryCompleted: boolean | null
+    papersConfirmed: boolean
+    guardianName: string
+    passportReceived: boolean
+  }[]
 }
 
 export interface EmployeeInput {
@@ -80,6 +185,8 @@ export interface EmployeeInput {
 
 const MAX_NAME = 120
 const MAX_REASON = 1000
+const MAX_NOTE = 2000
+const MAX_TRIP_LABEL = 80
 const MAX_PILGRIMS = 40
 
 export function isRole(value: string): value is Role {
@@ -94,6 +201,58 @@ export function isProgram(value: string): value is ProgramType {
   return (PROGRAMS as readonly string[]).includes(value)
 }
 
+export function isCategory(value: string): value is AgeCategory {
+  return (CATEGORIES as readonly string[]).includes(value)
+}
+
+export function isGender(value: string): value is Gender {
+  return (GENDERS as readonly string[]).includes(value)
+}
+
+function settlePilgrim(pilgrim: {
+  category: AgeCategory
+  gender: Gender | ''
+  militaryCompleted: boolean | null
+  papersConfirmed: boolean
+  guardianName: string
+}, legacy = false) {
+  if (pilgrim.category === 'adult') {
+    if (!isGender(pilgrim.gender)) {
+      if (!legacy) throw new DomainError('gender')
+      return { gender: '' as const, militaryCompleted: null, papersConfirmed: false, guardianName: '' }
+    }
+    if (pilgrim.gender === 'woman') return { gender: pilgrim.gender, militaryCompleted: null, papersConfirmed: false, guardianName: '' }
+    if (pilgrim.militaryCompleted !== true && pilgrim.militaryCompleted !== false) {
+      if (!legacy) throw new DomainError('military')
+      return { gender: pilgrim.gender, militaryCompleted: null, papersConfirmed: false, guardianName: '' }
+    }
+    return { gender: pilgrim.gender, militaryCompleted: pilgrim.militaryCompleted, papersConfirmed: false, guardianName: '' }
+  }
+  const guardianName = pilgrim.guardianName.trim()
+  if (!guardianName) {
+    if (!legacy) throw new DomainError('guardian')
+    return { gender: '' as const, militaryCompleted: null, papersConfirmed: pilgrim.papersConfirmed === true, guardianName: '' }
+  }
+  return {
+    gender: '' as const,
+    militaryCompleted: null,
+    papersConfirmed: pilgrim.papersConfirmed === true,
+    guardianName: assertPersonName(guardianName, 'guardian'),
+  }
+}
+
+export function isSeason(value: string): value is Season {
+  return (SEASONS as readonly string[]).includes(value)
+}
+
+export function isCalendarDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
+}
+
+export function isBuiltinDate(value: string): boolean {
+  return (BUILTIN_DATES as readonly string[]).includes(value)
+}
+
 export function isPlan(value: string): value is PaymentPlan {
   return (PLANS as readonly string[]).includes(value)
 }
@@ -102,8 +261,81 @@ export function isTier(value: string): value is TripLevel {
   return (TIERS as readonly string[]).includes(value)
 }
 
+export function isPackageId(value: string) {
+  return /^[A-Za-z0-9_-]{1,40}$/.test(value)
+}
+
+export function packageById(id: string, programs: readonly UmrahProgram[] = UMRAH_PROGRAMS) {
+  return programs.find((item) => item.id === id) ?? null
+}
+
+export function packageQuotePiasters(packageId: string, room: ProgramType, programs: readonly UmrahProgram[] = UMRAH_PROGRAMS): number | null {
+  const program = packageById(packageId, programs)
+  if (!program) return null
+  const pounds = room === 'quad' || room === 'triple' || room === 'double' ? program.prices[room] : null
+  if (pounds == null) return null
+  return pounds * 100
+}
+
+export function pricedTotal(current: number | null, fromPackage: string, fromRoom: ProgramType, toPackage: string, toRoom: ProgramType, programs: readonly UmrahProgram[] = UMRAH_PROGRAMS): number | null {
+  const previous = packageQuotePiasters(fromPackage, fromRoom, programs)
+  const next = packageQuotePiasters(toPackage, toRoom, programs)
+  if (current == null || current === previous) return next
+  return current
+}
+
+function programLabel(value: unknown) {
+  if (typeof value !== 'string') throw new DomainError('programs')
+  const text = value.trim()
+  if (!text || text.length > 120) throw new DomainError('programs')
+  return text
+}
+
+function programPounds(value: unknown) {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 10000000) throw new DomainError('programs')
+  return value
+}
+
+export function assertPrograms(value: unknown): UmrahProgram[] {
+  if (!Array.isArray(value) || value.length < 1 || value.length > 40) throw new DomainError('programs')
+  const ids = new Set<string>()
+  return value.map((item) => {
+    if (!item || typeof item !== 'object') throw new DomainError('programs')
+    const row = item as Record<string, unknown>
+    const id = typeof row.id === 'string' ? row.id.trim() : ''
+    if (!isPackageId(id) || ids.has(id)) throw new DomainError('programs')
+    ids.add(id)
+    const prices = row.prices
+    if (!prices || typeof prices !== 'object') throw new DomainError('programs')
+    const money = prices as Record<string, unknown>
+    return {
+      id,
+      nameAr: programLabel(row.nameAr),
+      nameEn: programLabel(row.nameEn),
+      makkahAr: programLabel(row.makkahAr),
+      makkahEn: programLabel(row.makkahEn),
+      madinahAr: programLabel(row.madinahAr),
+      madinahEn: programLabel(row.madinahEn),
+      prices: { quad: programPounds(money.quad), triple: programPounds(money.triple), double: programPounds(money.double) },
+    }
+  })
+}
+
+export function programsOrDefault(value: unknown): UmrahProgram[] {
+  if (value == null) return UMRAH_PROGRAMS.map((item) => ({ ...item, prices: { ...item.prices } }))
+  return assertPrograms(value)
+}
+
 export function emptyPricing(): Pricing {
-  return { standard: null, premium: null, vip: null }
+  return { farBus: null, close: null, closeVip: null }
+}
+
+const LEGACY_TIERS: Record<string, TripLevel> = { standard: 'farBus', premium: 'close', vip: 'closeVip' }
+
+export function coerceTier(value: unknown): TripLevel | null {
+  if (typeof value !== 'string') return null
+  if (isTier(value)) return value
+  return LEGACY_TIERS[value] ?? null
 }
 
 export function assertHotelName(value: string) {
@@ -118,7 +350,7 @@ export function assertPricing(input: Pricing): Pricing {
     if (!Number.isInteger(value) || value <= 0 || value > 100_000_000_00) throw new DomainError('total')
     return value
   }
-  return { standard: price(input.standard), premium: price(input.premium), vip: price(input.vip) }
+  return { farBus: price(input.farBus), close: price(input.close), closeVip: price(input.closeVip) }
 }
 
 export function isLanguage(value: string): value is Language {
@@ -158,7 +390,7 @@ export function assertPassword(value: string) {
 }
 
 export function assertDepartureDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) throw new DomainError('departureDate')
+  if (!isCalendarDate(value)) throw new DomainError('departureDate')
   const date = new Date(`${value}T00:00:00Z`)
   if (Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value) {
     throw new DomainError('departureDate')
@@ -166,13 +398,82 @@ export function assertDepartureDate(value: string) {
   return value
 }
 
-export function assertReceptionDraft(draft: ReceptionDraft): ReceptionDraft {
+export function assertTripChoice(value: string): string {
+  const label = value.trim()
+  if (!label || label === TRIP_OTHER || label.length > MAX_TRIP_LABEL || /[\n\r]/.test(label)) throw new DomainError('departureDate')
+  if (isCalendarDate(label)) return assertDepartureDate(label)
+  return label
+}
+
+export function assertNotes(value: string): string {
+  const text = value.trim()
+  if (text.length > MAX_NOTE) throw new DomainError('notes')
+  return text
+}
+
+export function tripChoices(extras: readonly string[], current?: string | readonly string[]): string[] {
+  const values: string[] = [...BUILTIN_DATES, ...SEASONS]
+  const more = [...extras, ...(typeof current === 'string' ? [current] : current ?? [])]
+  for (const value of more) {
+    if (value && value !== TRIP_OTHER && !values.includes(value)) values.push(value)
+  }
+  return values
+}
+
+export function isBuiltinReferral(value: string): boolean {
+  return (REFERRAL_BUILTIN as readonly string[]).includes(value)
+}
+
+export function referralChoices(extras: readonly string[], current = ''): string[] {
+  const values: string[] = [...REFERRAL_BUILTIN]
+  for (const extra of extras) {
+    const label = extra.trim()
+    if (label && !values.includes(label)) values.push(label)
+  }
+  const kept = current.trim()
+  if (kept && kept !== REFERRAL_OTHER && !values.includes(kept)) values.push(kept)
+  return values
+}
+
+export function referralDocId(value: string): string | null {
+  if (isBuiltinReferral(value)) return null
+  const label = value.trim()
+  if (!label || label === '.' || label === '..' || label.includes('/') || label.length > MAX_TRIP_LABEL || /[\n\r]/.test(label)) return null
+  return label
+}
+
+export function assertReferralType(value: string): string {
+  const label = value.trim()
+  if (!label || label === REFERRAL_OTHER || label.length > MAX_TRIP_LABEL || /[\n\r]/.test(label) || label.includes('/')) {
+    throw new DomainError('referralType')
+  }
+  return label
+}
+
+export function rememberTrip(extras: readonly string[], value: string): string[] {
+  if (isBuiltinDate(value) || isSeason(value)) return [...extras]
+  const label = value.trim()
+  if (!label || extras.includes(label)) return [...extras]
+  return [...extras, label]
+}
+
+export function assertReceptionDraft(draft: ReceptionDraft, options?: { legacy?: boolean }): ReceptionDraft {
   const contactName = assertPersonName(draft.contactName, 'contactName')
   const phone = normalizePhone(draft.phone)
-  const departureDate = assertDepartureDate(draft.departureDate)
+  const departureDate = assertTripChoice(draft.departureDate)
   if (!isProgram(draft.programType)) throw new DomainError('programType')
   if (!isPlan(draft.paymentPlan)) throw new DomainError('paymentPlan')
   if (!isTier(draft.tripLevel)) throw new DomainError('tripLevel')
+  const packageId = draft.packageId.trim()
+  if (!(options?.legacy && !packageId) && !isPackageId(packageId)) throw new DomainError('package')
+  const referralType = options?.legacy && !draft.referralType.trim() ? '' : assertReferralType(draft.referralType)
+  const referrerName = options?.legacy && !draft.referrerName.trim() ? '' : assertPersonName(draft.referrerName, 'referrer')
+  const bookingStatus = draft.bookingStatus === 'withdrawn' ? 'withdrawn' : draft.bookingStatus === 'confirmed' ? 'confirmed' : options?.legacy ? 'confirmed' : null
+  if (!bookingStatus) throw new DomainError('bookingStatus')
+  const customerNotes = assertNotes(draft.customerNotes ?? '')
+  const internalNotes = assertNotes(draft.internalNotes ?? '')
+  const enteredById = draft.enteredById.trim()
+  if (!(options?.legacy && !enteredById) && (!enteredById || enteredById.length > 128 || enteredById.includes('/'))) throw new DomainError('enteredBy')
   if (!Array.isArray(draft.pilgrims) || draft.pilgrims.length < 1 || draft.pilgrims.length > MAX_PILGRIMS) {
     throw new DomainError('pilgrims')
   }
@@ -181,16 +482,19 @@ export function assertReceptionDraft(draft: ReceptionDraft): ReceptionDraft {
     const id = pilgrim.id.trim()
     if (!id || id.length > 80 || ids.has(id)) throw new DomainError('pilgrimId')
     ids.add(id)
+    if (!isCategory(pilgrim.category)) throw new DomainError('category')
     return {
       id,
       name: assertPersonName(pilgrim.name, 'pilgrimName'),
+      category: pilgrim.category,
+      ...settlePilgrim(pilgrim, options?.legacy),
       passportReceived: pilgrim.passportReceived === true,
     }
   })
-  return { contactName, phone, departureDate, programType: draft.programType, paymentPlan: draft.paymentPlan, tripLevel: draft.tripLevel, pilgrims }
+  return { contactName, phone, departureDate, programType: draft.programType, paymentPlan: draft.paymentPlan, tripLevel: draft.tripLevel, packageId, referralType, referrerName, bookingStatus, customerNotes, internalNotes, enteredById, pilgrims }
 }
 
-export function emptyBooking(fileNumber: number, draft: ReceptionDraft): Booking {
+export function emptyBooking(fileNumber: number, draft: ReceptionDraft, createdByName = '', enteredById = '', programs: readonly UmrahProgram[] = UMRAH_PROGRAMS): Booking {
   const clean = assertReceptionDraft(draft)
   return {
     fileNumber,
@@ -200,12 +504,21 @@ export function emptyBooking(fileNumber: number, draft: ReceptionDraft): Booking
     programType: clean.programType,
     paymentPlan: clean.paymentPlan,
     tripLevel: clean.tripLevel,
+    packageId: clean.packageId,
     hotelName: '',
+    referralType: clean.referralType,
+    referrerName: clean.referrerName,
+    bookingStatus: clean.bookingStatus,
+    customerNotes: clean.customerNotes,
+    internalNotes: clean.internalNotes,
+    createdByName: createdByName.trim(),
+    enteredById: enteredById.trim(),
     stage: 'accounting',
-    totalPiasters: null,
+    totalPiasters: packageQuotePiasters(clean.packageId, clean.programType, programs),
     paidPiasters: 0,
     pilgrims: clean.pilgrims.map((pilgrim) => ({
       ...pilgrim,
+      category: pilgrim.category,
       visaIssued: false,
       ticketIssued: false,
     })),
@@ -213,7 +526,7 @@ export function emptyBooking(fileNumber: number, draft: ReceptionDraft): Booking
   }
 }
 
-export function applyReceptionEdit(booking: Booking, draft: ReceptionDraft, options?: { anyStage?: boolean; allowOpen?: boolean }): Booking {
+export function applyReceptionEdit(booking: Booking, draft: ReceptionDraft, options?: { anyStage?: boolean; allowOpen?: boolean; enteredByName?: string; programs?: readonly UmrahProgram[] }): Booking {
   const stageOk = booking.stage === 'reception' || (options?.allowOpen && booking.stage !== 'completed')
   if (!options?.anyStage && !stageOk) throw new DomainError('stage')
   const clean = assertReceptionDraft({ ...draft, paymentPlan: options?.anyStage ? draft.paymentPlan : booking.paymentPlan })
@@ -226,11 +539,25 @@ export function applyReceptionEdit(booking: Booking, draft: ReceptionDraft, opti
     programType: clean.programType,
     paymentPlan: clean.paymentPlan,
     tripLevel: clean.tripLevel,
+    packageId: clean.packageId,
+    totalPiasters: pricedTotal(booking.totalPiasters, booking.packageId, booking.programType, clean.packageId, clean.programType, options?.programs ?? UMRAH_PROGRAMS),
+    referralType: clean.referralType,
+    referrerName: clean.referrerName,
+    bookingStatus: clean.bookingStatus,
+    customerNotes: clean.customerNotes,
+    internalNotes: clean.internalNotes,
+    createdByName: options?.enteredByName !== undefined ? options.enteredByName.trim() : booking.createdByName,
+    enteredById: options?.enteredByName !== undefined ? clean.enteredById : booking.enteredById,
     pilgrims: clean.pilgrims.map((pilgrim) => {
       const existing = previous.get(pilgrim.id)
       return {
         id: pilgrim.id,
         name: pilgrim.name,
+        category: pilgrim.category,
+        gender: pilgrim.gender,
+        militaryCompleted: pilgrim.militaryCompleted,
+        papersConfirmed: pilgrim.papersConfirmed,
+        guardianName: pilgrim.guardianName,
         passportReceived: pilgrim.passportReceived,
         visaIssued: existing?.visaIssued ?? false,
         ticketIssued: existing?.ticketIssued ?? false,
@@ -345,6 +672,10 @@ export function applyAccounting(
   return { ...booking, totalPiasters, paymentPlan, tripLevel: details.tripLevel, hotelName }
 }
 
+export function applyNotes(booking: Booking, customerNotes: string, internalNotes: string): Booking {
+  return { ...booking, customerNotes: assertNotes(customerNotes), internalNotes: assertNotes(internalNotes) }
+}
+
 export function applyHotel(booking: Booking, hotelName: string, options?: { anyStage?: boolean }): Booking {
   if (!options?.anyStage && booking.stage !== 'audit') throw new DomainError('stage')
   return { ...booking, hotelName: assertHotelName(hotelName) }
@@ -354,7 +685,29 @@ export function normalizeBooking(booking: Booking): Booking {
   return {
     ...booking,
     hotelName: typeof booking.hotelName === 'string' ? booking.hotelName : '',
-    tripLevel: booking.tripLevel && isTier(booking.tripLevel) ? booking.tripLevel : null,
+    tripLevel: coerceTier(booking.tripLevel),
+    packageId: typeof booking.packageId === 'string' && isPackageId(booking.packageId) ? booking.packageId : '',
+    referralType: typeof booking.referralType === 'string' ? booking.referralType : '',
+    referrerName: typeof booking.referrerName === 'string' ? booking.referrerName : '',
+    bookingStatus: booking.bookingStatus === 'withdrawn' ? 'withdrawn' : 'confirmed',
+    customerNotes: typeof booking.customerNotes === 'string' ? booking.customerNotes : '',
+    internalNotes: typeof booking.internalNotes === 'string' ? booking.internalNotes : '',
+    createdByName: typeof booking.createdByName === 'string' ? booking.createdByName : '',
+    enteredById: typeof booking.enteredById === 'string' ? booking.enteredById : '',
+    pilgrims: booking.pilgrims.map((pilgrim) => {
+      const category = isCategory(pilgrim.category) ? pilgrim.category : 'adult'
+      const settled = settlePilgrim(
+        {
+          category,
+          gender: isGender(pilgrim.gender) ? pilgrim.gender : '',
+          militaryCompleted: pilgrim.militaryCompleted === true ? true : pilgrim.militaryCompleted === false ? false : null,
+          papersConfirmed: pilgrim.papersConfirmed === true,
+          guardianName: typeof pilgrim.guardianName === 'string' ? pilgrim.guardianName : '',
+        },
+        true,
+      )
+      return { ...pilgrim, category, ...settled }
+    }),
   }
 }
 
@@ -364,13 +717,19 @@ export function applyPaid(booking: Booking, paidPiasters: number, options?: { an
   return { ...booking, paidPiasters }
 }
 
+function assertNotWithdrawn(booking: Booking) {
+  if (booking.bookingStatus === 'withdrawn') throw new DomainError('withdrawn')
+}
+
 export function applyHandoff(booking: Booking): Booking {
+  assertNotWithdrawn(booking)
   if (booking.stage !== 'accounting') throw new DomainError('stage')
   if (booking.totalPiasters == null || booking.totalPiasters <= 0) throw new DomainError('total')
   return { ...booking, stage: 'audit' }
 }
 
 export function applySubmitReception(booking: Booking): Booking {
+  assertNotWithdrawn(booking)
   if (booking.stage !== 'reception') throw new DomainError('stage')
   assertReceptionDraft({
     contactName: booking.contactName,
@@ -378,13 +737,21 @@ export function applySubmitReception(booking: Booking): Booking {
     departureDate: booking.departureDate,
     programType: booking.programType,
     paymentPlan: booking.paymentPlan,
-    tripLevel: booking.tripLevel ?? 'standard',
+    tripLevel: booking.tripLevel ?? 'farBus',
+    packageId: booking.packageId,
+    referralType: booking.referralType,
+    referrerName: booking.referrerName,
+    bookingStatus: booking.bookingStatus,
+    customerNotes: booking.customerNotes,
+    internalNotes: booking.internalNotes,
+    enteredById: booking.enteredById,
     pilgrims: booking.pilgrims,
-  })
+  }, { legacy: true })
   return { ...booking, stage: 'accounting' }
 }
 
 export function applyApprove(booking: Booking): Booking {
+  assertNotWithdrawn(booking)
   if (booking.stage !== 'audit') throw new DomainError('stage')
   if (!passportsComplete(booking)) throw new DomainError('passports')
   if (!meetsPaymentRule(booking)) throw new DomainError('paymentRule')
@@ -392,6 +759,7 @@ export function applyApprove(booking: Booking): Booking {
 }
 
 export function applyReturn(booking: Booking, actor: { displayName: string; role: Role }, reason: string, at: string): Booking {
+  assertNotWithdrawn(booking)
   const next = backStage(booking.stage)
   const owner = stageOwner(booking.stage)
   if (!next || !owner || !canAct(actor.role, owner)) throw new DomainError('stage')
@@ -445,6 +813,7 @@ export function withoutPilgrim(booking: Booking, pilgrimId: string): Booking | n
 }
 
 export function applyComplete(booking: Booking): Booking {
+  assertNotWithdrawn(booking)
   if (booking.stage !== 'execution') throw new DomainError('stage')
   if (!meetsHalfPaid(booking)) throw new DomainError('halfPaid')
   if (!readyToComplete(booking)) throw new DomainError('flags')
@@ -518,12 +887,14 @@ export function cairoToday(now = new Date()): string {
 export type TripWhen = 'upcoming' | 'past'
 
 export function isUpcomingDate(date: string, today: string): boolean {
+  if (!isCalendarDate(date)) return true
   return date >= today
 }
 
 export function groupByDeparture(bookings: readonly Booking[], when: TripWhen, today: string): { date: string; bookings: Booking[]; people: number }[] {
   const grouped = new Map<string, Booking[]>()
   for (const booking of bookings) {
+    if (booking.bookingStatus === 'withdrawn') continue
     const upcoming = isUpcomingDate(booking.departureDate, today)
     if (when === 'upcoming' ? !upcoming : upcoming) continue
     const current = grouped.get(booking.departureDate)
@@ -585,12 +956,24 @@ export function parseReceptionDraft(input: unknown): ReceptionDraft {
     programType: readString(source.programType, 'programType') as ProgramType,
     paymentPlan: readString(source.paymentPlan, 'paymentPlan') as PaymentPlan,
     tripLevel: readString(source.tripLevel, 'tripLevel') as TripLevel,
+    packageId: typeof source.packageId === 'string' ? source.packageId : '',
+    referralType: readString(source.referralType, 'referralType'),
+    referrerName: readString(source.referrerName, 'referrer'),
+    bookingStatus: source.bookingStatus === 'withdrawn' ? 'withdrawn' : source.bookingStatus === 'confirmed' ? 'confirmed' : ('' as BookingStatus),
+    customerNotes: typeof source.customerNotes === 'string' ? source.customerNotes : '',
+    internalNotes: typeof source.internalNotes === 'string' ? source.internalNotes : '',
+    enteredById: typeof source.enteredById === 'string' ? source.enteredById : '',
     pilgrims: source.pilgrims.map((item) => {
       if (!item || typeof item !== 'object') throw new DomainError('pilgrims')
       const pilgrim = item as Record<string, unknown>
       return {
         id: readString(pilgrim.id, 'pilgrimId'),
         name: readString(pilgrim.name, 'pilgrimName'),
+        category: readString(pilgrim.category, 'category') as AgeCategory,
+        gender: pilgrim.gender === 'man' || pilgrim.gender === 'woman' ? pilgrim.gender : '',
+        militaryCompleted: pilgrim.militaryCompleted === true ? true : pilgrim.militaryCompleted === false ? false : null,
+        papersConfirmed: pilgrim.papersConfirmed === true,
+        guardianName: typeof pilgrim.guardianName === 'string' ? pilgrim.guardianName : '',
         passportReceived: pilgrim.passportReceived === true,
       }
     }),

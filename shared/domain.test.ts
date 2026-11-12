@@ -6,6 +6,7 @@ import {
   applyFlags,
   applyHandoff,
   applyHotel,
+  applyNotes,
   applyPaid,
   applyReceptionEdit,
   applyReturn,
@@ -15,6 +16,14 @@ import {
   groupByDeparture,
   isUpcomingDate,
   emptyBooking,
+  assertPrograms,
+  packageQuotePiasters,
+  pricedTotal,
+  normalizeBooking,
+  coerceTier,
+  referralChoices,
+  rememberTrip,
+  UMRAH_PROGRAMS,
   withoutPilgrim,
   formatDate,
   formatMoney,
@@ -34,11 +43,18 @@ const draft = {
   departureDate: '2026-12-01',
   programType: 'quad' as const,
   paymentPlan: 'installments' as const,
-  tripLevel: 'standard' as const,
+  tripLevel: 'farBus' as const,
+  packageId: 'prog_1',
+  referralType: 'marketer',
+  referrerName: '  مكتب النيل  ',
+  bookingStatus: 'confirmed' as const,
   hotelName: 'Dar Al Eiman',
+  customerNotes: '  يحتاج كرسي متحرك  ',
+  internalNotes: '',
+  enteredById: 'user-1',
   pilgrims: [
-    { id: 'a', name: 'Sara Ali', passportReceived: true },
-    { id: 'b', name: 'Omar Ali', passportReceived: false },
+    { id: 'a', name: 'Sara Ali', category: 'adult' as const, gender: 'woman' as const, militaryCompleted: null, papersConfirmed: false, guardianName: '', passportReceived: true },
+    { id: 'b', name: 'Omar Ali', category: 'child' as const, gender: '' as const, militaryCompleted: null, papersConfirmed: false, guardianName: 'Sara Ali', passportReceived: false },
   ],
 }
 
@@ -86,8 +102,52 @@ describe('pipeline', () => {
     expect(booking.fileNumber).toBe(1)
     expect(booking.phone).toBe('+201012345678')
     expect(booking.paidPiasters).toBe(0)
-    expect(booking.totalPiasters).toBeNull()
+    expect(booking.totalPiasters).toBe(4400000)
+    expect(packageQuotePiasters('prog_5', 'double')).toBe(12350000)
+    expect(packageQuotePiasters('prog_1', 'quint')).toBeNull()
+    expect(assertPrograms([{ ...UMRAH_PROGRAMS[0], nameAr: 'برنامج خاص', prices: { quad: 1000, triple: 2000, double: 3000 } }])[0].prices.double).toBe(3000)
+    expect(() => assertPrograms([])).toThrow('programs')
+    expect(pricedTotal(4400000, 'prog_1', 'quad', 'prog_1', 'triple')).toBe(4750000)
+    expect(pricedTotal(5000000, 'prog_1', 'quad', 'prog_1', 'triple')).toBe(5000000)
     expect(booking.pilgrims[1].visaIssued).toBe(false)
+    expect(booking.pilgrims[0].gender).toBe('woman')
+    expect(booking.pilgrims[0].militaryCompleted).toBeNull()
+    expect(booking.pilgrims[1].category).toBe('child')
+    expect(booking.pilgrims[1].guardianName).toBe('Sara Ali')
+    expect(booking.pilgrims[1].papersConfirmed).toBe(false)
+    expect(booking.customerNotes).toBe('يحتاج كرسي متحرك')
+    expect(booking.createdByName).toBe('')
+    expect(booking.referrerName).toBe('مكتب النيل')
+    expect(booking.bookingStatus).toBe('confirmed')
+    const entered = emptyBooking(2, draft, '  نورا  ', ' user-1 ')
+    expect(entered.createdByName).toBe('نورا')
+    expect(entered.enteredById).toBe('user-1')
+    expect(coerceTier('premium')).toBe('close')
+    expect(referralChoices(['وكالة'], 'marketer')).toEqual(['marketer', 'office', 'وكالة'])
+    expect(() => emptyBooking(6, { ...draft, referralType: 'other' })).toThrow('referralType')
+    expect(() => applyHandoff({ ...sample(), bookingStatus: 'withdrawn', totalPiasters: 10000, paidPiasters: 0 })).toThrow('withdrawn')
+  })
+
+  it('keeps agency trips and remembers a new one', () => {
+    expect(rememberTrip([], 'shaban')).toEqual([])
+    expect(rememberTrip([], '2026-10-14')).toEqual([])
+    expect(rememberTrip([], '2026-11-18')).toEqual(['2026-11-18'])
+    expect(rememberTrip(['شعبان إضافي'], '  شعبان إضافي  ')).toEqual(['شعبان إضافي'])
+    expect(rememberTrip([], 'رجب')).toEqual(['رجب'])
+    expect(applyNotes(sample(), '  كرسي  ', 'اتصال غدا').customerNotes).toBe('كرسي')
+    expect(applyNotes(sample(), 'كرسي', 'اتصال غدا').internalNotes).toBe('اتصال غدا')
+    expect(isUpcomingDate('ramadan', '2026-11-12')).toBe(true)
+    const aged = normalizeBooking({ ...sample(), pilgrims: [{ ...sample().pilgrims[0], category: undefined as never, gender: undefined as never }] })
+    expect(aged.pilgrims[0].category).toBe('adult')
+    expect(aged.pilgrims[0].gender).toBe('')
+    const man = emptyBooking(3, {
+      ...draft,
+      pilgrims: [{ id: 'm', name: 'Ali Hassan', category: 'adult', gender: 'man', militaryCompleted: false, papersConfirmed: true, guardianName: 'ignored', passportReceived: true }],
+    })
+    expect(man.pilgrims[0].militaryCompleted).toBe(false)
+    expect(man.pilgrims[0].guardianName).toBe('')
+    expect(() => emptyBooking(4, { ...draft, pilgrims: [{ ...draft.pilgrims[0], gender: 'man', militaryCompleted: null }] })).toThrow('military')
+    expect(() => emptyBooking(5, { ...draft, pilgrims: [{ ...draft.pilgrims[1], guardianName: '  ' }] })).toThrow('guardian')
   })
 
   it('blocks approval until passports and the payment rule pass', () => {
@@ -105,7 +165,7 @@ describe('pipeline', () => {
   it('lets accounting hand off with nothing paid once the total is set', () => {
     const booking = { ...sample(), totalPiasters: 15000 }
     expect(applyHandoff(booking).stage).toBe('audit')
-    expect(() => applyHandoff(sample())).toThrow('total')
+    expect(() => applyHandoff({ ...sample(), totalPiasters: null })).toThrow('total')
   })
 
   it('lets an admin change passport, visa, and ticket on any stage', () => {
@@ -188,17 +248,17 @@ describe('pipeline', () => {
 
   it('lets an auditor replace the default total while the file is in audit', () => {
     const booking = { ...sample(), stage: 'audit' as const, totalPiasters: 100000, paidPiasters: 0 }
-    const priced = applyAccounting(booking, 80000, 'installments', { tripLevel: 'vip', hotelName: 'Fairmont' }, { allowAudit: true })
+    const priced = applyAccounting(booking, 80000, 'installments', { tripLevel: 'closeVip', hotelName: 'Fairmont' }, { allowAudit: true })
     expect(priced.totalPiasters).toBe(80000)
-    expect(priced.tripLevel).toBe('vip')
+    expect(priced.tripLevel).toBe('closeVip')
     expect(priced.hotelName).toBe('Fairmont')
-    const kept = applyAccounting({ ...sample(), hotelName: 'Fairmont', totalPiasters: 100000, paidPiasters: 0 }, 90000, 'cash', { tripLevel: 'standard', hotelName: '' })
+    const kept = applyAccounting({ ...sample(), hotelName: 'Fairmont', totalPiasters: 100000, paidPiasters: 0 }, 90000, 'cash', { tripLevel: 'farBus', hotelName: '' })
     expect(kept.hotelName).toBe('Fairmont')
     expect(sample().hotelName).toBe('')
     expect(applyHotel(booking, '  Hilton  ').hotelName).toBe('Hilton')
     expect(applyHotel({ ...sample(), stage: 'execution' }, 'Hilton', { anyStage: true }).hotelName).toBe('Hilton')
     expect(() => applyHotel({ ...sample(), stage: 'execution' }, 'Hilton')).toThrow('stage')
-    expect(() => applyAccounting(booking, 80000, 'installments', { tripLevel: 'vip', hotelName: 'Fairmont' })).toThrow('stage')
+    expect(() => applyAccounting(booking, 80000, 'installments', { tripLevel: 'closeVip', hotelName: 'Fairmont' })).toThrow('stage')
   })
 
   it('rejects a total below the amount already paid', () => {
@@ -214,10 +274,11 @@ describe('pipeline', () => {
     ])
     const edited = applyReceptionEdit(
       { ...booking, stage: 'reception' },
-      { ...draft, pilgrims: [{ id: 'a', name: 'Sara', passportReceived: true }] },
+      { ...draft, pilgrims: [{ id: 'a', name: 'Sara', category: 'adult', gender: 'woman', militaryCompleted: null, papersConfirmed: false, guardianName: '', passportReceived: true }] },
     )
     expect(edited.pilgrims).toHaveLength(1)
     expect(edited.pilgrims[0].visaIssued).toBe(true)
+    expect(edited.pilgrims[0].gender).toBe('woman')
   })
 
   it('removes one pilgrim and clears the file when the last pilgrim is removed', () => {

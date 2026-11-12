@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { homeForRole } from '@shared/domain'
 import { call, errorCode } from '../lib/api'
-import { useAuth } from '../lib/auth'
+import { sendPasswordReset, useAuth } from '../lib/auth'
 import { useI18n } from '../lib/i18n'
 import { Banner, FieldError } from '../components/ui'
 
@@ -14,12 +14,17 @@ const loginSchema = z.object({
   password: z.string().min(8, 'password'),
 })
 
+const resetSchema = z.object({
+  email: z.string().trim().email('email'),
+})
+
 const setupSchema = loginSchema.extend({
   displayName: z.string().trim().min(1, 'displayName'),
 })
 
 type LoginValues = z.infer<typeof loginSchema>
 type SetupValues = z.infer<typeof setupSchema>
+type ResetValues = z.infer<typeof resetSchema>
 
 export function LoginPage() {
   const { user, profile, ready, signIn } = useAuth()
@@ -27,6 +32,8 @@ export function LoginPage() {
   const [needsBootstrap, setNeedsBootstrap] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(sessionStorage.getItem('starshine.notice'))
   const [pending, setPending] = useState(false)
+  const [recovering, setRecovering] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   useEffect(() => {
     sessionStorage.removeItem('starshine.notice')
@@ -39,6 +46,7 @@ export function LoginPage() {
   }, [])
 
   const loginForm = useForm<LoginValues>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } })
+  const resetForm = useForm<ResetValues>({ resolver: zodResolver(resetSchema), defaultValues: { email: '' } })
   const setupForm = useForm<SetupValues>({
     resolver: zodResolver(setupSchema),
     defaultValues: { displayName: '', email: '', password: '' },
@@ -51,6 +59,26 @@ export function LoginPage() {
     setError(null)
     try {
       await signIn(values.email, values.password)
+    } catch (caught) {
+      setError(errorCode(caught))
+    } finally {
+      setPending(false)
+    }
+  }
+
+  function showSignIn() {
+    setRecovering(false)
+    setResetSent(false)
+    setError(null)
+    resetForm.reset()
+  }
+
+  async function onReset(values: ResetValues) {
+    setPending(true)
+    setError(null)
+    try {
+      await sendPasswordReset(values.email)
+      setResetSent(true)
     } catch (caught) {
       setError(errorCode(caught))
     } finally {
@@ -80,14 +108,12 @@ export function LoginPage() {
       </div>
       <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="mb-6 w-full max-w-xs sm:max-w-sm" />
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-sm">
-        <h1 className="text-xl font-semibold text-deep">{needsBootstrap ? t('createAdmin') : t('signIn')}</h1>
+        <h1 className="text-xl font-semibold text-deep">{needsBootstrap ? t('createAdmin') : recovering ? t('resetPassword') : t('signIn')}</h1>
         {needsBootstrap && <p className="mt-2 text-sm text-muted">{t('setupLead')}</p>}
         <div className="mt-4">
           <Banner code={error} />
         </div>
-        {needsBootstrap === null ? (
-          <p className="mt-6 text-sm text-muted">{t('loading')}</p>
-        ) : needsBootstrap ? (
+        {needsBootstrap ? (
           <form className="mt-5 space-y-3" onSubmit={setupForm.handleSubmit(onSetup)} noValidate>
             <label className="block text-sm font-medium">
               {t('displayName')}
@@ -108,6 +134,30 @@ export function LoginPage() {
               {t('createAdmin')}
             </button>
           </form>
+        ) : recovering ? (
+          resetSent ? (
+            <div className="mt-5 space-y-4">
+              <p className="text-sm text-deep">{t('resetSent')}</p>
+              <button type="button" className="min-h-11 w-full rounded-md bg-deep px-4 py-2 font-semibold text-white" onClick={showSignIn}>
+                {t('backToSignIn')}
+              </button>
+            </div>
+          ) : (
+            <form className="mt-5 space-y-3" onSubmit={resetForm.handleSubmit(onReset)} noValidate>
+              <p className="text-sm text-muted">{t('resetLead')}</p>
+              <label className="block text-sm font-medium">
+                {t('email')}
+                <input dir="ltr" className="mt-1 w-full rounded-md border border-line px-3 py-2" autoComplete="username" {...resetForm.register('email')} />
+                <FieldError message={resetForm.formState.errors.email?.message} />
+              </label>
+              <button type="submit" disabled={pending} className="min-h-11 w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
+                {t('resetPassword')}
+              </button>
+              <button type="button" className="min-h-11 w-full text-sm font-semibold text-blue" onClick={showSignIn}>
+                {t('backToSignIn')}
+              </button>
+            </form>
+          )
         ) : (
           <form className="mt-5 space-y-3" onSubmit={loginForm.handleSubmit(onLogin)} noValidate>
             <label className="block text-sm font-medium">
@@ -120,6 +170,9 @@ export function LoginPage() {
               <input dir="ltr" type="password" className="mt-1 w-full rounded-md border border-line px-3 py-2" autoComplete="current-password" {...loginForm.register('password')} />
               <FieldError message={loginForm.formState.errors.password?.message} />
             </label>
+            <button type="button" className="min-h-11 text-sm font-semibold text-blue" onClick={() => { setRecovering(true); setError(null); setResetSent(false) }}>
+              {t('forgotPassword')}
+            </button>
             <button type="submit" disabled={pending} className="min-h-11 w-full rounded-md bg-deep px-4 py-2 font-semibold text-white disabled:opacity-50">
               {t('signIn')}
             </button>

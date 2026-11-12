@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { Suspense, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { homeForRole } from '@shared/domain'
 import { useAuth } from '../lib/auth'
@@ -108,8 +108,10 @@ export function Shell() {
         </div>
       </header>
       {menuOpen && <button type="button" className="fixed inset-0 z-20 xl:hidden" aria-label={t('cancel')} onClick={() => setMenuOpen(false)} />}
-      <main className="mx-auto min-w-0 max-w-6xl px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <Outlet />
+      <main className={`mx-auto min-w-0 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] ${location.pathname === '/history' || location.pathname === '/trips' ? 'max-w-none' : 'max-w-6xl'}`}>
+        <Suspense fallback={<p className="text-muted">{t('loading')}</p>}>
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   )

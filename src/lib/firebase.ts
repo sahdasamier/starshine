@@ -1,6 +1,12 @@
 import { initializeApp } from 'firebase/app'
 import { connectAuthEmulator, getAuth } from 'firebase/auth'
-import { connectFirestoreEmulator, getFirestore } from 'firebase/firestore'
+import {
+  connectFirestoreEmulator,
+  getFirestore,
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
+} from 'firebase/firestore'
 import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 
 const app = initializeApp({
@@ -11,12 +17,27 @@ const app = initializeApp({
 })
 
 export const auth = getAuth(app)
-export const db = getFirestore(app)
+
+const useEmulator = import.meta.env.VITE_USE_EMULATOR === 'true'
+
+function openFirestore() {
+  if (useEmulator) return getFirestore(app)
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      experimentalAutoDetectLongPolling: true,
+    })
+  } catch {
+    return getFirestore(app)
+  }
+}
+
+export const db = openFirestore()
 export const functions = getFunctions(app, 'europe-west1')
 
 const globalScope = globalThis as typeof globalThis & { __starshineEmulator?: boolean }
 
-if (import.meta.env.VITE_USE_EMULATOR === 'true' && !globalScope.__starshineEmulator) {
+if (useEmulator && !globalScope.__starshineEmulator) {
   globalScope.__starshineEmulator = true
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFirestoreEmulator(db, '127.0.0.1', 8080)

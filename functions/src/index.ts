@@ -10,6 +10,7 @@ import {
   applyFlags,
   applyHandoff,
   applyHotel,
+  applyNotes,
   applyPaid,
   applyReceptionEdit,
   applyReturn,
@@ -18,11 +19,16 @@ import {
   assertEmployeeUpdate,
   assertPricing,
   emptyBooking,
+  packageById,
+  programsOrDefault,
+  assertPrograms,
   isLanguage,
   isPlan,
   isRole,
   isTier,
   normalizeBooking,
+  referralDocId,
+  rememberTrip,
   withoutPilgrim,
   parsePoundsToPiasters,
   parseReceptionDraft,
@@ -79,7 +85,8 @@ async function saveBooking(id: string, mutate: (booking: Booking) => Booking) {
   await db.runTransaction(async (tx) => {
     const snap = await tx.get(ref)
     if (!snap.exists) throw new DomainError('notFound')
-    tx.set(ref, normalizeBooking(mutate(snap.data() as Booking)))
+    const current = normalizeBooking(snap.data() as Booking)
+    tx.set(ref, normalizeBooking(mutate(current)))
   })
   return { id }
 }
@@ -88,6 +95,40 @@ function text(data: Record<string, unknown>, key: string) {
   const value = data[key]
   if (typeof value !== 'string') throw new DomainError('invalid')
   return value
+}
+
+function extrasOf(data: { extras?: unknown } | undefined): string[] {
+  const extras = data?.extras
+  if (!Array.isArray(extras)) return []
+  return extras.filter((item): item is string => typeof item === 'string')
+}
+
+async function rememberReferral(value: string) {
+  const id = referralDocId(value)
+  if (!id) return
+  const ref = db.collection('referralTypes').doc(id)
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref)
+    if (!snap.exists) tx.set(ref, { label: value })
+  })
+}
+
+async function rememberDeparture(value: string) {
+  const ref = db.doc('meta/tripDates')
+  await db.runTransaction(async (tx) => {
+    const snap = await tx.get(ref)
+    const extras = extrasOf(snap.data())
+    const next = rememberTrip(extras, value)
+    if (next.length !== extras.length) tx.set(ref, { extras: next })
+  })
+}
+
+function staffName(data: { displayName?: unknown; disabled?: unknown; role?: unknown } | undefined) {
+  const role = data?.role
+  if (!data || data.disabled === true || typeof role !== 'string' || !isRole(role)) throw new DomainError('enteredBy')
+  const name = typeof data.displayName === 'string' ? data.displayName.trim() : ''
+  if (!name) throw new DomainError('enteredBy')
+  return name
 }
 
 function optionalPrice(value: unknown) {
@@ -214,6 +255,19 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
       return { uid }
     }
 
+    if (action === 'listStaff') {
+      const snap = await db.collection('users').get()
+      const staff = snap.docs.flatMap((item) => {
+        const row = item.data()
+        if (row.disabled === true || typeof row.role !== 'string' || !isRole(row.role)) return []
+        const displayName = typeof row.displayName === 'string' ? row.displayName.trim() : ''
+        if (!displayName) return []
+        return [{ uid: item.id, displayName, role: row.role }]
+      })
+      staff.sort((left, right) => left.displayName.localeCompare(right.displayName, 'ar'))
+      return { staff }
+    }
+
     if (action === 'createBooking') {
       if (actor.role !== 'reception' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const draft = parseReceptionDraft(data)
@@ -222,20 +276,40 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
         const counter = await tx.get(counterRef)
         const fileNumber = counter.exists ? Number(counter.data()?.next) : 1
         if (!Number.isInteger(fileNumber) || fileNumber < 1) throw new DomainError('invalid')
+        const datesRef = db.doc('meta/tripDates')
+        const dates = await tx.get(datesRef)
+        const referralId = referralDocId(draft.referralType)
+        const referralRef = referralId ? db.collection('referralTypes').doc(referralId) : null
+        const referral = referralRef ? await tx.get(referralRef) : null
+        const staff = await tx.get(db.doc(`users/${draft.enteredById}`))
+        const catalogSnap = await tx.get(db.doc('meta/programs'))
+        const programs = programsOrDefault(catalogSnap.data()?.programs)
+        if (!packageById(draft.packageId, programs)) throw new DomainError('package')
+        const extras = extrasOf(dates.data())
+        const nextExtras = rememberTrip(extras, draft.departureDate)
+        if (nextExtras.length !== extras.length) tx.set(datesRef, { extras: nextExtras })
+        if (referralRef && referral && !referral.exists) tx.set(referralRef, { label: draft.referralType })
         const ref = db.collection('bookings').doc()
-        tx.set(ref, emptyBooking(fileNumber, draft))
+        tx.set(ref, emptyBooking(fileNumber, draft, staffName(staff.data()), draft.enteredById, programs))
         tx.set(counterRef, { next: fileNumber + 1 })
         return ref.id
       })
       return { id }
     }
 
+    if (action === 'setPrograms') {
+      requireRole(actor, 'admin')
+      const programs = assertPrograms(data.programs)
+      await db.doc('meta/programs').set({ programs })
+      return { programs }
+    }
+
     if (action === 'setPricing') {
       requireRole(actor, 'admin')
       const pricing = assertPricing({
-        standard: optionalPrice(data.standard),
-        premium: optionalPrice(data.premium),
-        vip: optionalPrice(data.vip),
+        farBus: optionalPrice(data.farBus),
+        close: optionalPrice(data.close),
+        closeVip: optionalPrice(data.closeVip),
       })
       await db.doc('meta/pricing').set(pricing)
       return pricing
@@ -246,8 +320,15 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
     if (action === 'updateReception') {
       if (actor.role !== 'reception' && actor.role !== 'auditor' && actor.role !== 'admin') throw new DomainError('role')
       const draft = parseReceptionDraft(data)
+      const staff = await db.doc(`users/${draft.enteredById}`).get()
+      const enteredByName = staffName(staff.data())
+      const catalog = await db.doc('meta/programs').get()
+      const programs = programsOrDefault(catalog.data()?.programs)
+      if (!packageById(draft.packageId, programs)) throw new DomainError('package')
+      await rememberDeparture(draft.departureDate)
+      await rememberReferral(draft.referralType)
       await saveBooking(id, (booking) =>
-        applyReceptionEdit(booking, draft, { anyStage: actor.role === 'admin' || actor.role === 'auditor' }),
+        applyReceptionEdit(booking, draft, { anyStage: actor.role === 'admin' || actor.role === 'auditor', enteredByName, programs }),
       )
       return { id }
     }
@@ -272,6 +353,13 @@ export const api = onCall({ region: 'europe-west1', invoker: 'public', timeoutSe
           allowAudit: actor.role === 'auditor' || actor.role === 'admin',
         }),
       )
+      return { id }
+    }
+
+    if (action === 'setNotes') {
+      const customerNotes = typeof data.customerNotes === 'string' ? data.customerNotes : ''
+      const internalNotes = typeof data.internalNotes === 'string' ? data.internalNotes : ''
+      await saveBooking(id, (booking) => applyNotes(booking, customerNotes, internalNotes))
       return { id }
     }
 

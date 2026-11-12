@@ -1,18 +1,20 @@
+import { lazy } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { homeForRole } from '@shared/domain'
 import { Shell } from './components/Shell'
 import { useAuth } from './lib/auth'
 import { BookingsProvider } from './lib/bookings'
 import { useI18n } from './lib/i18n'
-import { BookingFormPage } from './pages/BookingFormPage'
-import { BookingPage } from './pages/BookingPage'
-import { CompletedPage } from './pages/CompletedPage'
-import { EmployeesPage } from './pages/EmployeesPage'
 import { LoginPage } from './pages/LoginPage'
-import { HistoryPage } from './pages/HistoryPage'
-import { QueuePage } from './pages/QueuePage'
-import { SearchPage } from './pages/SearchPage'
-import { TripsPage } from './pages/TripsPage'
+
+const QueuePage = lazy(() => import('./pages/QueuePage').then((m) => ({ default: m.QueuePage })))
+const TripsPage = lazy(() => import('./pages/TripsPage').then((m) => ({ default: m.TripsPage })))
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })))
+const CompletedPage = lazy(() => import('./pages/CompletedPage').then((m) => ({ default: m.CompletedPage })))
+const SearchPage = lazy(() => import('./pages/SearchPage').then((m) => ({ default: m.SearchPage })))
+const EmployeesPage = lazy(() => import('./pages/EmployeesPage').then((m) => ({ default: m.EmployeesPage })))
+const BookingFormPage = lazy(() => import('./pages/BookingFormPage').then((m) => ({ default: m.BookingFormPage })))
+const BookingPage = lazy(() => import('./pages/BookingPage').then((m) => ({ default: m.BookingPage })))
 
 function Home() {
   const { profile } = useAuth()

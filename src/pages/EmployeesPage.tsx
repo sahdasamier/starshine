@@ -4,12 +4,13 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { collection, onSnapshot } from 'firebase/firestore'
 import { z } from 'zod'
-import { ROLES, TIERS, formatPounds, type Pricing, type Role } from '@shared/domain'
+import { DomainError, ROLES, TIERS, assertPrograms, formatPounds, type Pricing, type Role, type UmrahProgram } from '@shared/domain'
 import { call, errorCode } from '../lib/api'
 import { useAuth, type Profile } from '../lib/auth'
 import { db } from '../lib/firebase'
 import { useI18n } from '../lib/i18n'
 import { usePricing } from '../lib/pricing'
+import { usePrograms } from '../lib/programs'
 import { useRemoval } from '../components/confirm'
 import { TrashButton } from '../components/icons'
 import { Banner, FieldError, roleKey, tierKey } from '../components/ui'
@@ -88,6 +89,7 @@ export function EmployeesPage() {
         </dl>
       </header>
       <PricingPanel />
+      <ProgramPrices />
       <section className="rounded-2xl border border-line bg-card p-4">
         <h2 className="text-lg font-semibold text-deep">{t('createEmployee')}</h2>
         <form className="mt-4 grid gap-3 md:grid-cols-2" onSubmit={form.handleSubmit(onCreate)} noValidate>
@@ -173,16 +175,16 @@ export function EmployeesPage() {
 function PricingPanel() {
   const { t } = useI18n()
   const { pricing } = usePricing()
-  const [prices, setPrices] = useState<Record<keyof Pricing, string>>({ standard: '', premium: '', vip: '' })
+  const [prices, setPrices] = useState<Record<keyof Pricing, string>>({ farBus: '', close: '', closeVip: '' })
   const [error, setError] = useState<string | null>(null)
   const [pending, setPending] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     setPrices({
-      standard: pricing.standard == null ? '' : formatPounds(pricing.standard),
-      premium: pricing.premium == null ? '' : formatPounds(pricing.premium),
-      vip: pricing.vip == null ? '' : formatPounds(pricing.vip),
+      farBus: pricing.farBus == null ? '' : formatPounds(pricing.farBus),
+      close: pricing.close == null ? '' : formatPounds(pricing.close),
+      closeVip: pricing.closeVip == null ? '' : formatPounds(pricing.closeVip),
     })
   }, [pricing])
 
@@ -226,6 +228,159 @@ function PricingPanel() {
       <div className="mt-3">
         <Banner code={error} />
       </div>
+    </section>
+  )
+}
+
+type ProgramDraft = {
+  id: string
+  nameAr: string
+  nameEn: string
+  makkahAr: string
+  makkahEn: string
+  madinahAr: string
+  madinahEn: string
+  quad: string
+  triple: string
+  double: string
+}
+
+function draftProgram(program: UmrahProgram): ProgramDraft {
+  return {
+    id: program.id,
+    nameAr: program.nameAr,
+    nameEn: program.nameEn,
+    makkahAr: program.makkahAr,
+    makkahEn: program.makkahEn,
+    madinahAr: program.madinahAr,
+    madinahEn: program.madinahEn,
+    quad: String(program.prices.quad),
+    triple: String(program.prices.triple),
+    double: String(program.prices.double),
+  }
+}
+
+function blankProgram(): ProgramDraft {
+  return { id: `prog_${crypto.randomUUID().slice(0, 8)}`, nameAr: '', nameEn: '', makkahAr: '', makkahEn: '', madinahAr: '', madinahEn: '', quad: '', triple: '', double: '' }
+}
+
+function wholePounds(value: string) {
+  if (!/^\d+$/.test(value.trim())) return Number.NaN
+  return Number(value.trim())
+}
+
+function ProgramPrices() {
+  const { t } = useI18n()
+  const { programs, ready } = usePrograms()
+  const [rows, setRows] = useState<ProgramDraft[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [pending, setPending] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!ready || rows) return
+    setRows(programs.map(draftProgram))
+  }, [ready, programs, rows])
+
+  function update(id: string, patch: Partial<ProgramDraft>) {
+    setSaved(false)
+    setRows((current) => current?.map((row) => (row.id === id ? { ...row, ...patch } : row)) ?? current)
+  }
+
+  async function save() {
+    if (!rows) return
+    setPending(true)
+    setError(null)
+    setSaved(false)
+    try {
+      const next = rows.map((row) => ({
+        id: row.id,
+        nameAr: row.nameAr,
+        nameEn: row.nameEn,
+        makkahAr: row.makkahAr,
+        makkahEn: row.makkahEn,
+        madinahAr: row.madinahAr,
+        madinahEn: row.madinahEn,
+        prices: { quad: wholePounds(row.quad), triple: wholePounds(row.triple), double: wholePounds(row.double) },
+      }))
+      assertPrograms(next)
+      await call('setPrograms', { programs: next })
+      setSaved(true)
+    } catch (caught) {
+      setError(caught instanceof DomainError ? caught.code : errorCode(caught))
+    } finally {
+      setPending(false)
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-line bg-card p-4">
+      <h2 className="text-lg font-semibold text-deep">{t('programPrices')}</h2>
+      <p className="mt-1 text-sm text-muted">{t('programPricesLead')}</p>
+      {!rows ? (
+        <p className="mt-4 text-sm text-muted">{t('loading')}</p>
+      ) : (
+        <div className="mt-4 space-y-4">
+          {rows.map((row, index) => (
+            <fieldset key={row.id} className="rounded-xl border border-line p-3">
+              <legend className="px-1 text-sm font-semibold text-deep">{index + 1}</legend>
+              <div className="grid gap-3 md:grid-cols-2">
+                <label className="text-sm font-medium">
+                  {t('nameAr')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.nameAr} onChange={(event) => update(row.id, { nameAr: event.target.value })} />
+                </label>
+                <label className="text-sm font-medium">
+                  {t('nameEn')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.nameEn} onChange={(event) => update(row.id, { nameEn: event.target.value })} />
+                </label>
+                <label className="text-sm font-medium">
+                  {t('makkahAr')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.makkahAr} onChange={(event) => update(row.id, { makkahAr: event.target.value })} />
+                </label>
+                <label className="text-sm font-medium">
+                  {t('makkahEn')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.makkahEn} onChange={(event) => update(row.id, { makkahEn: event.target.value })} />
+                </label>
+                <label className="text-sm font-medium">
+                  {t('madinahAr')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.madinahAr} onChange={(event) => update(row.id, { madinahAr: event.target.value })} />
+                </label>
+                <label className="text-sm font-medium">
+                  {t('madinahEn')}
+                  <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.madinahEn} onChange={(event) => update(row.id, { madinahEn: event.target.value })} />
+                </label>
+                {(['quad', 'triple', 'double'] as const).map((room) => (
+                  <label key={room} className="text-sm font-medium">
+                    {t(room === 'quad' ? 'programQuad' : room === 'triple' ? 'programTriple' : 'programDouble')}
+                    <input dir="ltr" inputMode="numeric" className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row[room]} onChange={(event) => update(row.id, { [room]: event.target.value })} />
+                  </label>
+                ))}
+              </div>
+              <button
+                type="button"
+                className="mt-3 text-sm font-semibold text-danger disabled:opacity-40"
+                disabled={rows.length === 1}
+                onClick={() => {
+                  setSaved(false)
+                  setRows((current) => current?.filter((item) => item.id !== row.id) ?? current)
+                }}
+              >
+                {t('removeProgram')}
+              </button>
+            </fieldset>
+          ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="rounded-md border border-line px-4 py-2 text-sm font-semibold" onClick={() => setRows((current) => (current ? [...current, blankProgram()] : current))}>
+              {t('addProgram')}
+            </button>
+            <button type="button" disabled={pending} className="rounded-md bg-deep px-4 py-2 text-sm font-semibold text-white disabled:opacity-50" onClick={() => void save()}>
+              {t('save')}
+            </button>
+            {saved && <span className="text-sm text-ok">{t('saved')}</span>}
+          </div>
+          <Banner code={error} />
+        </div>
+      )}
     </section>
   )
 }

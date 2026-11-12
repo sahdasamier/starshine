@@ -23,7 +23,7 @@ export function QueuePage() {
     ? (booking: { id: string }) => removal.ask(t('removeFile'), t('confirmRemoveFile'), () => call('deleteBooking', { id: booking.id }))
     : undefined
   if (profile.role === 'admin') {
-    const rows = bookings.filter((booking) => booking.stage !== 'completed')
+    const rows = bookings.filter((booking) => booking.stage !== 'completed' && booking.bookingStatus !== 'withdrawn')
     return (
       <section className="rounded-2xl border border-line bg-card">
         <header className="flex flex-wrap items-end justify-between gap-3 border-b border-line px-4 py-4">
@@ -39,7 +39,7 @@ export function QueuePage() {
     )
   }
   const stage: Stage = stageForRole[profile.role]
-  const rows = bookings.filter((booking) => booking.stage === stage)
+  const rows = bookings.filter((booking) => booking.stage === stage && booking.bookingStatus !== 'withdrawn')
 
   return (
     <section className="rounded-2xl border border-line bg-card">

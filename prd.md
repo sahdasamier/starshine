@@ -29,7 +29,7 @@ All amounts are Egyptian pounds (EGP), with up to two decimal places. Arabic sho
 
 ## 3. Accounts and access
 
-Employees sign in with email and password. Passwords are at least 8 characters. The developer creates the first admin during setup. After that, admins create every account. There is no self-registration. The admin sets the password and replaces it when someone forgets it.
+Employees sign in with email and password. Passwords are at least 8 characters. The developer creates the first admin during setup. After that, admins create every account. There is no self-registration. The sign-in screen has **Forgot password**. The employee enters an email and Firebase sends a reset link. The screen always says that a link was sent when the address is valid, so it does not reveal whether that account exists. The admin can still replace a password.
 
 Each employee has one login and one role:
 
@@ -55,23 +55,33 @@ Fields on the booking:
 | --- | --- | --- |
 | Contact name | Yes | The contact does not have to be a pilgrim |
 | Phone | Yes | Egyptian mobile. See below |
-| Departure date | Yes | A calendar date, with no time |
-| Program type | Yes | One of Double, Triple, Quad, Quint. One label for the whole booking. It does not set the price |
-| Trip level | Yes | Standard (Middle), Premium (Above Middle), or VIP / Luxury (Advanced) |
+| Departure | Yes | A choice from the agency trip list: the fixed dates, Sha'ban, Ramadan, the last 10 days of Ramadan, or a date already added. Other opens a calendar, and that day is saved for every later file |
+| Room type | Yes | One of Double, Triple, Quad, Quint. One room type for the whole booking. It does not set the price |
+| Trip total | Filled from the program | Double, Triple, and Quad take the price of the chosen program. A quint room has no listed price, so its total stays empty until accounting enters one |
+| Umrah program | Yes | Chosen from the program list. The admin can add a program, remove one, and edit its names, hotels, and double, triple, and quad prices. A quint room has no listed price |
 | Hotel name | No | Optional. The auditor types it while the file is in Audit. The admin can change it on any file |
+| Source | Yes | Marketer, Office, or a type added earlier. Other opens a text field, and saving stores that type in the `referralTypes` collection |
+| Referrer name | Yes | The person or office who brought the customer |
+| Booking status | Yes | Confirmed or Withdrawn. A withdrawn file stays in All files with a red tag and does not appear in Accounting, Audit, Execution, or Trips |
 | Payment plan | Yes | Cash or Installments |
-| Pilgrims | At least one | Each pilgrim has a full name |
+| Customer notes | No | Requests or medical notes from the customer |
+| Staff notes | No | Notes the staff share across departments |
+| Data entered by | Yes | Chosen on the file from the employees the admin has added. The signed-in account does not fill this in. The chosen name is shown on the file |
+| Pilgrims | At least one | Each pilgrim has a full name and an age category: infant, child, minor, or adult. An adult is man or woman, and a man records whether military service is completed. Anyone younger records whether the papers are confirmed and the name of the person responsible |
 
 Phone input accepts `01` followed by 9 digits, or the same number written with `+20`. The stored value is `+20` plus the 10 digits that follow the leading zero. Example: `01012345678` is stored as `+201012345678`.
 
 Each pilgrim stores:
 
 - Full name
+- Age category: infant, child, minor, or adult. A file saved before this field existed shows adult
+- For an adult: man or woman. A man also records whether he has completed military service. A woman does not
+- For an infant, child, or minor: whether the papers are confirmed, and the name of the person responsible for that pilgrim
 - Passport received (starts unchecked)
 - Visa issued (starts unchecked)
 - Ticket issued (starts unchecked)
 
-The booking does not store passport number, nationality, date of birth, or gender. It does not store an installment schedule or a list of individual payments.
+The booking does not store passport number, nationality, or date of birth. It stores man or woman only for an adult. It does not store an installment schedule or a list of individual payments.
 
 Money on the booking:
 
@@ -131,7 +141,7 @@ Queues sort by departure date, soonest first. Bookings with the same date sort b
 
 Search finds any booking. A file number matches exactly. A contact name, pilgrim name, or phone matches when the typed text appears anywhere in that field. Latin letter case is ignored. Phone search matches either the `01…` form or the stored `+20…` form.
 
-The completed list shows bookings whose visa and tickets are done. **History** (All files) shows every booking, including completed ones, so an old trip can be opened by its departure date. It sorts with the latest departure date first. **Trips** groups the same bookings by departure date. Upcoming includes today and later dates, soonest first. Past is every earlier date, latest first. Choosing a date shows that day’s passenger list: each pilgrim’s name, file number, contact, phone, program, and stage, plus the pilgrim count and the file count. Today follows Egypt time.
+The completed list shows bookings whose visa and tickets are done. **History** (All files) shows every booking, including completed and withdrawn ones, so an old trip can be opened by its departure date. All files is one spreadsheet: the header stays pinned, the file number and customer name stay pinned while the sheet scrolls sideways, and each file is one row. The columns are file number, name, phone, date, program, room, passenger type, payment method, total, paid, remaining, stage, status, referral and referrer, passport, who entered the file, customer notes, and staff notes, then the other stored fields: pilgrim names, hotel level, Makkah hotel, Madinah hotel, hotel name, paid percent, sex, military service, papers, the responsible person, visa, ticket, and return notes. It sorts with the latest departure date first. **Trips** groups the same bookings by departure date. Upcoming includes today and later dates, soonest first. Past is every earlier date, latest first. Choosing a date opens that day as a spreadsheet, one row per pilgrim, with the file details beside the person, plus the pilgrim count and the file count. A withdrawn booking stays in All files and is left out of Trips. Today follows Egypt time.
 
 On the new-file form, and when a file is edited, choosing a departure date shows the other pilgrims already booked on that date and how many people that is. The file being edited is not counted in its own list. An empty date says that nobody is booked yet.
 
@@ -143,7 +153,13 @@ On the new-file form, and when a file is edited, choosing a departure date shows
 - The app runs in one Firebase project the agency owns, on pay-as-you-go billing
 - Signed-in access and the role rules above are enforced in Firebase Security Rules
 
-## 9. Out of scope for this version
+## 9. Trip list, room, age, and notes
+
+The departure field is a dropdown. The built-in choices are 30 September 2026, 14 October 2026, 28 October 2026, 11 November 2026, 25 November 2026, 9 December 2026, 23 December 2026, 6 January 2027, 20 January 2027, Sha'ban, Ramadan, and the last 10 days of Ramadan. **Other** opens a calendar. Saving that file stores the chosen day in `meta/tripDates`, and every employee sees it in the dropdown after that. A file that already has a date outside this list keeps that date, and it stays selectable.
+
+Room type is the double, triple, quad, or quint choice on the booking. Each pilgrim also has an age category. An adult chooses man or woman, and a man records military service. An infant, child, or minor records the papers and the person responsible. Customer notes and staff notes are two separate fields. Both are visible, and any employee can edit them, when the file is opened from Audit, Execution, All files, or any other list. The file shows who entered it. That person is chosen from the employees the admin created, and the choice can be changed while the file can still be edited.
+
+## 10. Out of scope for this version
 
 - Scanning or uploading passports, visas, or tickets
 - SMS or WhatsApp messages

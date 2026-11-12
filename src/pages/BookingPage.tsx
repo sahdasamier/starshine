@@ -2,31 +2,30 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   PLANS,
-  TIERS,
   backStage,
   canAct,
   displayPhone,
-  formatDate,
   formatMoney,
   formatPounds,
   formatStamp,
   meetsHalfPaid,
+  packageById,
+  packageQuotePiasters,
   meetsPaymentRule,
   paidPercent,
-  parsePoundsToPiasters,
   passportsComplete,
   readyToComplete,
   stageOwner,
-  type TripLevel,
 } from '@shared/domain'
 import { call, errorCode } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useBookings } from '../lib/bookings'
 import { useI18n } from '../lib/i18n'
 import { usePricing } from '../lib/pricing'
+import { usePrograms } from '../lib/programs'
 import { useRemoval } from '../components/confirm'
 import { TrashButton } from '../components/icons'
-import { Banner, Marks, planKey, programKey, roleKey, stageKey, tierKey } from '../components/ui'
+import { Banner, Marks, categoryKey, departureLabel, pilgrimFacts, planKey, programKey, referralLabel, roleKey, stageKey, statusKey } from '../components/ui'
 
 export function BookingPage() {
   const { id } = useParams()
@@ -43,19 +42,21 @@ export function BookingPage() {
   const [total, setTotal] = useState('')
   const [plan, setPlan] = useState<'cash' | 'installments'>('installments')
   const [paid, setPaid] = useState('0.00')
-  const [tier, setTier] = useState<TripLevel>('standard')
-  const [hotel, setHotel] = useState('')
+  const [customerNotes, setCustomerNotes] = useState('')
+  const [internalNotes, setInternalNotes] = useState('')
   const { pricing } = usePricing()
+  const { programs } = usePrograms()
 
   useEffect(() => {
     if (!booking) return
-    const fallback = booking.totalPiasters == null && booking.tripLevel ? pricing[booking.tripLevel] : null
+    const packageQuote = packageQuotePiasters(booking.packageId, booking.programType, programs)
+    const fallback = booking.totalPiasters == null ? (packageQuote ?? (booking.tripLevel ? pricing[booking.tripLevel] : null)) : null
     setTotal(booking.totalPiasters == null ? (fallback == null ? '' : formatPounds(fallback)) : formatPounds(booking.totalPiasters))
     setPlan(booking.paymentPlan)
     setPaid(formatPounds(booking.paidPiasters))
-    setTier(booking.tripLevel ?? 'standard')
-    setHotel(booking.hotelName)
-  }, [booking, pricing])
+    setCustomerNotes(booking.customerNotes)
+    setInternalNotes(booking.internalNotes)
+  }, [booking, pricing, programs])
 
   if (!profile) return null
   if (!ready) return <p className="text-muted">{t('loading')}</p>
@@ -67,14 +68,14 @@ export function BookingPage() {
   const reviewer = profile.role === 'auditor'
   const canEditDetails = openFile || reviewer || (profile.role === 'reception' && booking.stage === 'reception')
   const canEditPrice = openFile || reviewer || (profile.role === 'accountant' && booking.stage === 'accounting')
-  const canEditHotel = openFile || reviewer
   const canEditPlan = openFile || reviewer || (profile.role === 'accountant' && booking.stage === 'accounting')
   const canEditPaid = (openFile || reviewer || (profile.role === 'accountant' && booking.stage !== 'reception')) && booking.totalPiasters != null
   const canTogglePassport = openFile || reviewer || (profile.role === 'reception' && booking.stage === 'reception')
   const canToggleTravel = openFile || reviewer || (profile.role === 'operations' && booking.stage === 'execution')
   const halfPaid = meetsHalfPaid(booking)
   const owner = stageOwner(booking.stage)
-  const canReturn = owner != null && canAct(profile.role, owner) && backStage(booking.stage) != null
+  const canReturn = booking.bookingStatus !== 'withdrawn' && owner != null && canAct(profile.role, owner) && backStage(booking.stage) != null
+  const moving = booking.bookingStatus !== 'withdrawn'
   const previous = backStage(booking.stage)
 
   async function run(action: string, data: Record<string, unknown> = {}) {
@@ -113,11 +114,18 @@ export function BookingPage() {
       departureDate: booking!.departureDate,
       programType: booking!.programType,
       paymentPlan: booking!.paymentPlan,
-      tripLevel: booking!.tripLevel ?? 'standard',
+      tripLevel: booking!.tripLevel ?? 'farBus',
       hotelName: booking!.hotelName,
+      customerNotes: booking!.customerNotes,
+      internalNotes: booking!.internalNotes,
       pilgrims: booking!.pilgrims.map((pilgrim) => ({
         id: pilgrim.id,
         name: pilgrim.name,
+        category: pilgrim.category,
+        gender: pilgrim.gender,
+        militaryCompleted: pilgrim.militaryCompleted,
+        papersConfirmed: pilgrim.papersConfirmed,
+        guardianName: pilgrim.guardianName,
         passportReceived: pilgrim.id === pilgrimId ? !pilgrim.passportReceived : pilgrim.passportReceived,
       })),
     })
@@ -130,6 +138,8 @@ export function BookingPage() {
           <p className="text-xs font-semibold text-gold">{t('file')}</p>
           <h1 className="num text-4xl font-semibold text-deep">{booking.fileNumber}</h1>
           <p className="mt-1 text-sm font-semibold">{t(stageKey(booking.stage))}</p>
+          {booking.createdByName && <p className="mt-1 text-sm text-muted">{t('createdBy')}: {booking.createdByName}</p>}
+          {booking.bookingStatus === 'withdrawn' && <p className="mt-2 w-fit rounded-full bg-danger/10 px-3 py-1 text-sm font-semibold text-danger">{t(statusKey('withdrawn'))}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Marks booking={booking} />
@@ -156,33 +166,35 @@ export function BookingPage() {
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t('departureDate')}</dt>
-              <dd className="num">{formatDate(booking.departureDate)}</dd>
+              <dd className="num">{departureLabel(booking.departureDate, t)}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t('programType')}</dt>
               <dd>{t(programKey(booking.programType))}</dd>
             </div>
             <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('tripLevel')}</dt>
-              <dd>{booking.tripLevel ? t(tierKey(booking.tripLevel)) : t('emptyMoney')}</dd>
+              <dt className="text-muted">{t('umrahProgram')}</dt>
+              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.nameAr : packageById(booking.packageId, programs)?.nameEn) : t('emptyMoney')}</dd>
             </div>
-            <div className="flex flex-wrap items-end justify-between gap-3">
-              {canEditHotel ? (
-                <label className="min-w-0 flex-1 text-sm font-medium">
-                  {t('hotelName')}
-                  <span className="mt-1 flex flex-col gap-2 sm:flex-row">
-                    <input className="w-full rounded-md border border-line px-3 py-2" value={hotel} onChange={(event) => setHotel(event.target.value)} />
-                    <button type="button" disabled={pending} className="min-h-11 w-full shrink-0 rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50 sm:w-auto" onClick={() => void run('setHotel', { hotelName: hotel })}>
-                      {t('save')}
-                    </button>
-                  </span>
-                </label>
-              ) : (
-                <>
-                  <dt className="text-muted">{t('hotelName')}</dt>
-                  <dd>{booking.hotelName || t('emptyMoney')}</dd>
-                </>
-              )}
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t('makkahHotel')}</dt>
+              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.makkahAr : packageById(booking.packageId, programs)?.makkahEn) : t('emptyMoney')}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t('madinahHotel')}</dt>
+              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.madinahAr : packageById(booking.packageId, programs)?.madinahEn) : t('emptyMoney')}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t('referralType')}</dt>
+              <dd>{booking.referralType ? referralLabel(booking.referralType, t) : t('emptyMoney')}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t('referrerName')}</dt>
+              <dd>{booking.referrerName || t('emptyMoney')}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-muted">{t('bookingStatus')}</dt>
+              <dd className={booking.bookingStatus === 'withdrawn' ? 'font-semibold text-danger' : ''}>{t(statusKey(booking.bookingStatus ?? 'confirmed'))}</dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t('paymentPlan')}</dt>
@@ -218,39 +230,14 @@ export function BookingPage() {
               {canEditPrice && (
                 <>
                   <label className="block text-sm font-medium">
-                    {t('tripLevel')}
-                    <select
-                      className="mt-1 w-full rounded-md border border-line px-3 py-2"
-                      value={tier}
-                      onChange={(event) => {
-                        const next = event.target.value as TripLevel
-                        const previousDefault = pricing[tier]
-                        const nextDefault = pricing[next]
-                        setTier(next)
-                        if (booking.totalPiasters != null || nextDefault == null) return
-                        let current: number | null = null
-                        try {
-                          current = parsePoundsToPiasters(total)
-                        } catch {
-                          current = null
-                        }
-                        if (total.trim() === '' || current === previousDefault) setTotal(formatPounds(nextDefault))
-                      }}
-                    >
-                      {TIERS.map((item) => (
-                        <option key={item} value={item}>
-                          {t(tierKey(item))}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="block text-sm font-medium">
                     {t('total')}
                     <input dir="ltr" className="mt-1 w-full rounded-md border border-line px-3 py-2" value={total} onChange={(event) => setTotal(event.target.value)} />
                   </label>
-                  {booking.totalPiasters == null && booking.tripLevel && pricing[booking.tripLevel] != null && (
+                  {packageQuotePiasters(booking.packageId, booking.programType, programs) != null ? (
+                    <p className="text-xs text-muted">{t('packagePriceHint')}</p>
+                  ) : booking.totalPiasters == null && booking.tripLevel && pricing[booking.tripLevel] != null ? (
                     <p className="text-xs text-muted">{t('priceHint')}</p>
-                  )}
+                  ) : null}
                   <label className="block text-sm font-medium">
                     {t('paymentPlan')}
                     <select className="mt-1 w-full rounded-md border border-line px-3 py-2" value={plan} disabled={!canEditPlan} onChange={(event) => setPlan(event.target.value as 'cash' | 'installments')}>
@@ -261,7 +248,7 @@ export function BookingPage() {
                       ))}
                     </select>
                   </label>
-                  <button type="button" disabled={pending} className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-sm font-semibold sm:w-auto" onClick={() => void run('updateAccounting', { total, paymentPlan: plan, tripLevel: tier, hotelName: hotel })}>
+                  <button type="button" disabled={pending} className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-sm font-semibold sm:w-auto" onClick={() => void run('updateAccounting', { total, paymentPlan: plan, tripLevel: booking.tripLevel ?? 'farBus', hotelName: booking.hotelName })}>
                     {t('save')}
                   </button>
                 </>
@@ -289,6 +276,10 @@ export function BookingPage() {
             <li key={pilgrim.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
               <span className="flex flex-wrap items-center gap-3">
                 <span className="font-medium">{pilgrim.name}</span>
+                <span className="rounded-full bg-paper px-2 py-1 text-xs font-semibold text-deep">{t(categoryKey(pilgrim.category ?? 'adult'))}</span>
+                {pilgrimFacts(pilgrim, t).map((fact) => (
+                  <span key={fact} className="rounded-full bg-paper px-2 py-1 text-xs text-deep">{fact}</span>
+                ))}
                 {profile.role === 'admin' && (
                   <TrashButton
                     label={t('removePerson')}
@@ -333,14 +324,30 @@ export function BookingPage() {
       </section>
 
       <section className="space-y-3">
+        <div className="grid gap-4 md:grid-cols-2">
+          <label className="block rounded-2xl border border-line bg-card p-4 text-sm font-medium">
+            {t('customerNotes')}
+            <textarea rows={4} className="mt-2 w-full rounded-md border border-line px-3 py-2 font-normal" value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} />
+          </label>
+          <label className="block rounded-2xl border border-line bg-card p-4 text-sm font-medium">
+            {t('internalNotes')}
+            <textarea rows={4} className="mt-2 w-full rounded-md border border-line px-3 py-2 font-normal" value={internalNotes} onChange={(event) => setInternalNotes(event.target.value)} />
+          </label>
+        </div>
+        <button type="button" disabled={pending} className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50 sm:w-auto" onClick={() => void run('setNotes', { customerNotes, internalNotes })}>
+          {t('save')}
+        </button>
+      </section>
+
+      <section className="space-y-3">
         <Banner code={error} />
         <div className="grid gap-2 sm:flex sm:flex-wrap">
-          {canAct(profile.role, 'reception') && booking.stage === 'reception' && (
+          {moving && canAct(profile.role, 'reception') && booking.stage === 'reception' && (
             <button type="button" disabled={pending} className="min-h-11 rounded-md bg-gold px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => void run('submitReception')}>
               {t('sendAccounting')}
             </button>
           )}
-          {canAct(profile.role, 'accountant') && booking.stage === 'accounting' && (
+          {moving && canAct(profile.role, 'accountant') && booking.stage === 'accounting' && (
             <button
               type="button"
               disabled={pending || total.trim() === ''}
@@ -350,7 +357,7 @@ export function BookingPage() {
                   setPending(true)
                   setError(null)
                   try {
-                    await call('updateAccounting', { id: booking.id, total, paymentPlan: plan, tripLevel: tier, hotelName: hotel })
+                    await call('updateAccounting', { id: booking.id, total, paymentPlan: plan, tripLevel: booking.tripLevel ?? 'farBus', hotelName: booking.hotelName })
                     await call('handoff', { id: booking.id })
                   } catch (caught) {
                     setError(errorCode(caught))
@@ -363,7 +370,7 @@ export function BookingPage() {
               {t('handoff')}
             </button>
           )}
-          {canAct(profile.role, 'auditor') && booking.stage === 'audit' && (
+          {moving && canAct(profile.role, 'auditor') && booking.stage === 'audit' && (
             <button
               type="button"
               disabled={pending || !passportsComplete(booking) || !meetsPaymentRule(booking)}
@@ -373,7 +380,7 @@ export function BookingPage() {
               {t('approve')}
             </button>
           )}
-          {canAct(profile.role, 'operations') && booking.stage === 'execution' && (
+          {moving && canAct(profile.role, 'operations') && booking.stage === 'execution' && (
             <button type="button" disabled={pending || !halfPaid || !readyToComplete(booking)} className="min-h-11 rounded-md bg-ok px-4 py-2 font-semibold text-white disabled:opacity-50" onClick={() => setConfirming(true)}>
               {t('complete')}
             </button>

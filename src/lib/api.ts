@@ -20,6 +20,7 @@ export function errorCode(error: unknown): string {
     }
     if (code === 'auth/user-disabled') return 'disabled'
     if (code === 'auth/invalid-email') return 'email'
+    if (code === 'auth/too-many-requests') return 'tooMany'
     if (code === 'functions/unavailable' || code === 'functions/not-found') return 'unavailable'
   }
   return 'internal'

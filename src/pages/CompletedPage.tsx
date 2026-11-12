@@ -13,7 +13,7 @@ export function CompletedPage() {
   const removeFile = profile?.role === 'admin'
     ? (booking: { id: string }) => removal.ask(t('removeFile'), t('confirmRemoveFile'), () => call('deleteBooking', { id: booking.id }))
     : undefined
-  const rows = bookings.filter((booking) => booking.stage === 'completed')
+  const rows = bookings.filter((booking) => booking.stage === 'completed' && booking.bookingStatus !== 'withdrawn')
   return (
     <section className="rounded-2xl border border-line bg-card">
       <header className="border-b border-line px-4 py-4">

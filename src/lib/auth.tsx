@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
+import { onAuthStateChanged, sendPasswordResetEmail, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth'
 import { doc, onSnapshot } from 'firebase/firestore'
 import type { Language, Role } from '@shared/domain'
 import { auth, db } from './firebase'
@@ -72,6 +72,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+}
+
+export async function sendPasswordReset(email: string) {
+  try {
+    await sendPasswordResetEmail(
+      auth,
+      email.trim(),
+      import.meta.env.VITE_USE_EMULATOR === 'true' ? undefined : { url: `${window.location.origin}/login` },
+    )
+  } catch (error) {
+    const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : ''
+    if (code === 'auth/user-not-found') return
+    throw error
+  }
 }
 
 export function useAuth() {

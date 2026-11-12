@@ -17,9 +17,9 @@ export function usePricing() {
       (snap) => {
         const data = snap.data() ?? {}
         setPricing({
-          standard: readPrice(data.standard),
-          premium: readPrice(data.premium),
-          vip: readPrice(data.vip),
+          farBus: readPrice(data.farBus) ?? readPrice(data.standard),
+          close: readPrice(data.close) ?? readPrice(data.premium),
+          closeVip: readPrice(data.closeVip) ?? readPrice(data.vip),
         })
         setReady(true)
       },

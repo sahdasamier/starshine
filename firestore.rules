@@ -36,7 +36,12 @@ service cloud.firestore {
     }
 
     match /meta/{id} {
-      allow read: if active() && id == 'pricing';
+      allow read: if active() && (id == 'pricing' || id == 'tripDates' || id == 'programs');
+      allow write: if false;
+    }
+
+    match /referralTypes/{id} {
+      allow read: if active();
       allow write: if false;
     }
   }
