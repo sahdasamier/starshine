@@ -9,6 +9,7 @@ import {
   formatPounds,
   formatStamp,
   meetsHalfPaid,
+  bookingTotalPiasters,
   packageById,
   packageQuotePiasters,
   meetsPaymentRule,
@@ -62,8 +63,10 @@ export function BookingPage() {
   if (!ready) return <p className="text-muted">{t('loading')}</p>
   if (!booking) return <p className="text-muted">{t('err.notFound')}</p>
 
-  const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
-  const remaining = booking.totalPiasters == null ? null : booking.totalPiasters - booking.paidPiasters
+  const program = packageById(booking.packageId, programs)
+  const shownTotal = bookingTotalPiasters(booking, programs)
+  const percent = paidPercent(shownTotal, booking.paidPiasters)
+  const remaining = shownTotal == null ? null : shownTotal - booking.paidPiasters
   const openFile = profile.role === 'admin'
   const reviewer = profile.role === 'auditor'
   const canEditDetails = openFile || reviewer || (profile.role === 'reception' && booking.stage === 'reception')
@@ -214,7 +217,26 @@ export function BookingPage() {
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t('total')}</dt>
-              <dd className="num">{booking.totalPiasters == null ? t('emptyMoney') : formatMoney(booking.totalPiasters, language)}</dd>
+              <dd className="num text-end">
+                {shownTotal == null ? (
+                  program ? (
+                    <span className="flex flex-col items-end gap-1">
+                      <span>{t('emptyMoney')}</span>
+                      {(['quad', 'triple', 'double', 'quint'] as const).map((room) =>
+                        program.prices[room] == null ? null : (
+                          <span key={room} className="text-xs font-normal text-muted">
+                            {t(programKey(room))} · {formatMoney(program.prices[room] * 100, language)}
+                          </span>
+                        ),
+                      )}
+                    </span>
+                  ) : (
+                    t('emptyMoney')
+                  )
+                ) : (
+                  formatMoney(shownTotal, language)
+                )}
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted">{t('amountPaid')}</dt>
@@ -235,6 +257,26 @@ export function BookingPage() {
                   </label>
                   {packageQuotePiasters(booking.packageId, booking.programType, programs) != null ? (
                     <p className="text-xs text-muted">{t('packagePriceHint')}</p>
+                  ) : program ? (
+                    <div className="space-y-2">
+                      <p className="text-xs text-muted">{t('noPackagePrice')}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['quad', 'triple', 'double', 'quint'] as const).map((room) => {
+                          const pounds = program.prices[room]
+                          if (pounds == null) return null
+                          return (
+                            <button
+                              key={room}
+                              type="button"
+                              className="min-h-11 rounded-md border border-line px-3 py-2 text-sm font-semibold"
+                              onClick={() => setTotal(formatPounds(pounds * 100))}
+                            >
+                              {t(programKey(room))} · {formatMoney(pounds * 100, language)}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
                   ) : booking.totalPiasters == null && booking.tripLevel && pricing[booking.tripLevel] != null ? (
                     <p className="text-xs text-muted">{t('priceHint')}</p>
                   ) : null}

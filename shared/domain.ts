@@ -21,7 +21,7 @@ export interface UmrahProgram {
   makkahEn: string
   madinahAr: string
   madinahEn: string
-  prices: { quad: number; triple: number; double: number }
+  prices: { quad: number; triple: number; double: number; quint: number | null }
 }
 
 export const UMRAH_PROGRAMS: UmrahProgram[] = [
@@ -33,7 +33,7 @@ export const UMRAH_PROGRAMS: UmrahProgram[] = [
     makkahEn: 'Hotel 21',
     madinahAr: 'مجموعة الزهراء',
     madinahEn: 'Al Zahraa Group',
-    prices: { quad: 44000, triple: 47500, double: 51500 },
+    prices: { quad: 44000, triple: 47500, double: 51500, quint: null },
   },
   {
     id: 'prog_2',
@@ -43,7 +43,7 @@ export const UMRAH_PROGRAMS: UmrahProgram[] = [
     makkahEn: 'VOCO',
     madinahAr: 'مجموعة الزهراء',
     madinahEn: 'Al Zahraa Group',
-    prices: { quad: 47500, triple: 51500, double: 58500 },
+    prices: { quad: 47500, triple: 51500, double: 58500, quint: null },
   },
   {
     id: 'prog_3',
@@ -53,7 +53,7 @@ export const UMRAH_PROGRAMS: UmrahProgram[] = [
     makkahEn: 'Ajyad (Beer Balila) / Ibrahim Al Khalil',
     madinahAr: 'مجموعة الزهراء',
     madinahEn: 'Al Zahraa Group',
-    prices: { quad: 49500, triple: 54500, double: 62500 },
+    prices: { quad: 49500, triple: 54500, double: 62500, quint: null },
   },
   {
     id: 'prog_4',
@@ -63,7 +63,7 @@ export const UMRAH_PROGRAMS: UmrahProgram[] = [
     makkahEn: 'Al Shuhada',
     madinahAr: 'مجموعة الزهراء',
     madinahEn: 'Al Zahraa Group',
-    prices: { quad: 64500, triple: 73500, double: 89500 },
+    prices: { quad: 64500, triple: 73500, double: 89500, quint: null },
   },
   {
     id: 'prog_5',
@@ -73,7 +73,7 @@ export const UMRAH_PROGRAMS: UmrahProgram[] = [
     makkahEn: 'Prestige / Al Safwa / Movenpick',
     madinahAr: 'مجموعة الزهراء',
     madinahEn: 'Al Zahraa Group',
-    prices: { quad: 83500, triple: 95500, double: 123500 },
+    prices: { quad: 83500, triple: 95500, double: 123500, quint: null },
   },
 ]
 
@@ -272,9 +272,16 @@ export function packageById(id: string, programs: readonly UmrahProgram[] = UMRA
 export function packageQuotePiasters(packageId: string, room: ProgramType, programs: readonly UmrahProgram[] = UMRAH_PROGRAMS): number | null {
   const program = packageById(packageId, programs)
   if (!program) return null
-  const pounds = room === 'quad' || room === 'triple' || room === 'double' ? program.prices[room] : null
+  const pounds = program.prices[room]
   if (pounds == null) return null
   return pounds * 100
+}
+
+export function bookingTotalPiasters(
+  booking: Pick<Booking, 'totalPiasters' | 'packageId' | 'programType'>,
+  programs: readonly UmrahProgram[] = UMRAH_PROGRAMS,
+): number | null {
+  return booking.totalPiasters ?? packageQuotePiasters(booking.packageId, booking.programType, programs)
 }
 
 export function pricedTotal(current: number | null, fromPackage: string, fromRoom: ProgramType, toPackage: string, toRoom: ProgramType, programs: readonly UmrahProgram[] = UMRAH_PROGRAMS): number | null {
@@ -294,6 +301,11 @@ function programLabel(value: unknown) {
 function programPounds(value: unknown) {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 10000000) throw new DomainError('programs')
   return value
+}
+
+function optionalProgramPounds(value: unknown) {
+  if (value == null) return null
+  return programPounds(value)
 }
 
 export function assertPrograms(value: unknown): UmrahProgram[] {
@@ -316,7 +328,12 @@ export function assertPrograms(value: unknown): UmrahProgram[] {
       makkahEn: programLabel(row.makkahEn),
       madinahAr: programLabel(row.madinahAr),
       madinahEn: programLabel(row.madinahEn),
-      prices: { quad: programPounds(money.quad), triple: programPounds(money.triple), double: programPounds(money.double) },
+      prices: {
+        quad: programPounds(money.quad),
+        triple: programPounds(money.triple),
+        double: programPounds(money.double),
+        quint: optionalProgramPounds(money.quint),
+      },
     }
   })
 }

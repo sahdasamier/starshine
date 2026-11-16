@@ -6,6 +6,7 @@ import {
   formatMoney,
   formatStamp,
   isCalendarDate,
+  bookingTotalPiasters,
   packageById,
   paidPercent,
   showMissingPassport,
@@ -163,8 +164,9 @@ function PilgrimLines({ booking }: { booking: ClientBooking }) {
 export function FileFacts({ booking, people = true }: { booking: ClientBooking; people?: boolean }) {
   const { t, language } = useI18n()
   const { programs } = usePrograms()
-  const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
-  const remaining = booking.totalPiasters == null ? null : booking.totalPiasters - booking.paidPiasters
+  const total = bookingTotalPiasters(booking, programs)
+  const percent = paidPercent(total, booking.paidPiasters)
+  const remaining = total == null ? null : total - booking.paidPiasters
   return (
     <div className="space-y-3">
       <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm lg:grid-cols-4">
@@ -179,7 +181,7 @@ export function FileFacts({ booking, people = true }: { booking: ClientBooking; 
         <Fact label={t('referralType')} value={booking.referralType ? referralLabel(booking.referralType, t) : t('emptyMoney')} />
         <Fact label={t('referrerName')} value={booking.referrerName || t('emptyMoney')} />
         <Fact label={t('paymentPlan')} value={t(planKey(booking.paymentPlan))} />
-        <Fact label={t('total')} value={booking.totalPiasters == null ? t('emptyMoney') : formatMoney(booking.totalPiasters, language)} numeric />
+        <Fact label={t('total')} value={total == null ? t('emptyMoney') : formatMoney(total, language)} numeric />
         <Fact label={t('amountPaid')} value={formatMoney(booking.paidPiasters, language)} numeric />
         <Fact label={t('remaining')} value={remaining == null ? t('emptyMoney') : formatMoney(remaining, language)} numeric />
         <Fact label={t('paidPercent')} value={percent == null ? t('emptyMoney') : `${percent}%`} numeric />
@@ -290,8 +292,9 @@ export function FileSheet({
             const base = `border-b border-e border-gold/30 px-3 py-2 align-top ${stripe}`
             const cell = `${base} whitespace-nowrap`
             const wrap = `${base} max-w-64 whitespace-pre-line`
-            const remaining = booking.totalPiasters == null ? null : booking.totalPiasters - booking.paidPiasters
-            const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
+            const total = bookingTotalPiasters(booking, programs)
+            const remaining = total == null ? null : total - booking.paidPiasters
+            const percent = paidPercent(total, booking.paidPiasters)
             const strike = withdrawn ? 'text-danger line-through' : ''
             return (
               <tr key={booking.id}>
@@ -303,7 +306,7 @@ export function FileSheet({
                 <td className={cell}>{t(programKey(booking.programType))}</td>
                 <td className={wrap}>{peopleText(booking, (pilgrim) => t(categoryKey(pilgrim.category ?? 'adult')))}</td>
                 <td className={cell}>{t(planKey(booking.paymentPlan))}</td>
-                <td className={`${cell} num`}>{booking.totalPiasters == null ? blank : formatMoney(booking.totalPiasters, language)}</td>
+                <td className={`${cell} num`}>{total == null ? blank : formatMoney(total, language)}</td>
                 <td className={`${cell} num`}>{formatMoney(booking.paidPiasters, language)}</td>
                 <td className={`${cell} num`}>{remaining == null ? blank : formatMoney(remaining, language)}</td>
                 <td className={cell}>
@@ -361,13 +364,15 @@ export function BookingTable({
   onRemove?: (booking: ClientBooking) => void
 }) {
   const { t, language } = useI18n()
+  const { programs } = usePrograms()
   const rows = [...bookings].sort(compare)
   if (rows.length === 0) return <p className="px-4 py-10 text-center text-muted">{empty}</p>
   return (
     <>
       <ul className="divide-y divide-line md:hidden">
         {rows.map((booking) => {
-          const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
+          const total = bookingTotalPiasters(booking, programs)
+          const percent = paidPercent(total, booking.paidPiasters)
           return (
             <li key={booking.id} className="space-y-3 px-4 py-4">
               <div className="flex items-start justify-between gap-3">
@@ -408,6 +413,14 @@ export function BookingTable({
                   <dt className="text-xs text-muted">{t('paymentPlan')}</dt>
                   <dd>{t(planKey(booking.paymentPlan))}</dd>
                 </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('umrahProgram')}</dt>
+                  <dd>{packageName(booking, language, programs) || t('emptyMoney')}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('total')}</dt>
+                  <dd className="num">{total == null ? t('emptyMoney') : formatMoney(total, language)}</dd>
+                </div>
               </dl>
               <Marks booking={booking} />
             </li>
@@ -418,7 +431,7 @@ export function BookingTable({
       <table className="w-full min-w-[720px] text-sm">
         <thead className="bg-paper text-start text-muted">
           <tr>
-            {[t('file'), t('stageColumn'), t('contactName'), t('phone'), t('departureDate'), t('programType'), t('paymentPlan'), t('paidPercent'), ''].map((heading) => (
+            {[t('file'), t('stageColumn'), t('contactName'), t('phone'), t('departureDate'), t('umrahProgram'), t('programType'), t('paymentPlan'), t('total'), t('paidPercent'), ''].map((heading) => (
               <th key={heading || 'open'} className="px-3 py-2 font-medium">
                 {heading}
               </th>
@@ -427,7 +440,8 @@ export function BookingTable({
         </thead>
         <tbody>
           {rows.map((booking) => {
-            const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
+            const total = bookingTotalPiasters(booking, programs)
+            const percent = paidPercent(total, booking.paidPiasters)
             return (
               <tr key={booking.id} className="border-t border-line">
                 <td className={`num px-3 py-3 font-semibold text-deep ${booking.bookingStatus === 'withdrawn' ? 'line-through' : ''}`}>{booking.fileNumber}</td>
@@ -438,8 +452,10 @@ export function BookingTable({
                 <td className={`px-3 py-3 ${booking.bookingStatus === 'withdrawn' ? 'text-danger line-through' : ''}`}>{booking.contactName}</td>
                 <td className="num px-3 py-3">{displayPhone(booking.phone)}</td>
                 <td className="num px-3 py-3">{departureLabel(booking.departureDate, t)}</td>
+                <td className="px-3 py-3">{packageName(booking, language, programs) || t('emptyMoney')}</td>
                 <td className="px-3 py-3">{t(programKey(booking.programType))}</td>
                 <td className="px-3 py-3">{t(planKey(booking.paymentPlan))}</td>
+                <td className="num px-3 py-3">{total == null ? t('emptyMoney') : formatMoney(total, language)}</td>
                 <td className="num px-3 py-3">
                   <div>{percent == null ? t('emptyMoney') : `${percent}%`}</div>
                   <div className="text-xs text-muted">
@@ -529,8 +545,9 @@ export function ScheduleSheet({
             const stripe = index % 2 === 1 ? 'bg-paper' : 'bg-white'
             const cell = `border-b border-e border-gold/30 px-3 py-2 align-top whitespace-nowrap ${stripe}`
             const wrap = `border-b border-e border-gold/30 px-3 py-2 align-top whitespace-pre-line max-w-64 ${stripe}`
-            const remaining = booking.totalPiasters == null ? null : booking.totalPiasters - booking.paidPiasters
-            const percent = paidPercent(booking.totalPiasters, booking.paidPiasters)
+            const total = bookingTotalPiasters(booking, programs)
+            const remaining = total == null ? null : total - booking.paidPiasters
+            const percent = paidPercent(total, booking.paidPiasters)
             const adult = (pilgrim.category ?? 'adult') === 'adult'
             return (
               <tr key={`${booking.id}-${pilgrim.id}`}>
@@ -549,7 +566,7 @@ export function ScheduleSheet({
                 <td className={cell}>{yesNo(pilgrim.visaIssued)}</td>
                 <td className={cell}>{yesNo(pilgrim.ticketIssued)}</td>
                 <td className={cell}>{t(planKey(booking.paymentPlan))}</td>
-                <td className={`${cell} num`}>{booking.totalPiasters == null ? blank : formatMoney(booking.totalPiasters, language)}</td>
+                <td className={`${cell} num`}>{total == null ? blank : formatMoney(total, language)}</td>
                 <td className={`${cell} num`}>{formatMoney(booking.paidPiasters, language)}</td>
                 <td className={`${cell} num`}>{remaining == null ? blank : formatMoney(remaining, language)}</td>
                 <td className={cell}>{t(stageKey(booking.stage))}</td>

@@ -105,6 +105,7 @@ describe('pipeline', () => {
     expect(booking.totalPiasters).toBe(4400000)
     expect(packageQuotePiasters('prog_5', 'double')).toBe(12350000)
     expect(packageQuotePiasters('prog_1', 'quint')).toBeNull()
+    expect(packageQuotePiasters('prog_1', 'quint', [{ ...UMRAH_PROGRAMS[0], prices: { ...UMRAH_PROGRAMS[0].prices, quint: 40000 } }])).toBe(4000000)
     expect(assertPrograms([{ ...UMRAH_PROGRAMS[0], nameAr: 'برنامج خاص', prices: { quad: 1000, triple: 2000, double: 3000 } }])[0].prices.double).toBe(3000)
     expect(() => assertPrograms([])).toThrow('programs')
     expect(pricedTotal(4400000, 'prog_1', 'quad', 'prog_1', 'triple')).toBe(4750000)

@@ -243,6 +243,7 @@ type ProgramDraft = {
   quad: string
   triple: string
   double: string
+  quint: string
 }
 
 function draftProgram(program: UmrahProgram): ProgramDraft {
@@ -257,11 +258,12 @@ function draftProgram(program: UmrahProgram): ProgramDraft {
     quad: String(program.prices.quad),
     triple: String(program.prices.triple),
     double: String(program.prices.double),
+    quint: program.prices.quint == null ? '' : String(program.prices.quint),
   }
 }
 
 function blankProgram(): ProgramDraft {
-  return { id: `prog_${crypto.randomUUID().slice(0, 8)}`, nameAr: '', nameEn: '', makkahAr: '', makkahEn: '', madinahAr: '', madinahEn: '', quad: '', triple: '', double: '' }
+  return { id: `prog_${crypto.randomUUID().slice(0, 8)}`, nameAr: '', nameEn: '', makkahAr: '', makkahEn: '', madinahAr: '', madinahEn: '', quad: '', triple: '', double: '', quint: '' }
 }
 
 function wholePounds(value: string) {
@@ -301,7 +303,12 @@ function ProgramPrices() {
         makkahEn: row.makkahEn,
         madinahAr: row.madinahAr,
         madinahEn: row.madinahEn,
-        prices: { quad: wholePounds(row.quad), triple: wholePounds(row.triple), double: wholePounds(row.double) },
+        prices: {
+          quad: wholePounds(row.quad),
+          triple: wholePounds(row.triple),
+          double: wholePounds(row.double),
+          quint: row.quint.trim() === '' ? null : wholePounds(row.quint),
+        },
       }))
       assertPrograms(next)
       await call('setPrograms', { programs: next })
@@ -349,9 +356,9 @@ function ProgramPrices() {
                   {t('madinahEn')}
                   <input className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row.madinahEn} onChange={(event) => update(row.id, { madinahEn: event.target.value })} />
                 </label>
-                {(['quad', 'triple', 'double'] as const).map((room) => (
+                {(['quad', 'triple', 'double', 'quint'] as const).map((room) => (
                   <label key={room} className="text-sm font-medium">
-                    {t(room === 'quad' ? 'programQuad' : room === 'triple' ? 'programTriple' : 'programDouble')}
+                    {t(room === 'quad' ? 'programQuad' : room === 'triple' ? 'programTriple' : room === 'double' ? 'programDouble' : 'programQuint')}
                     <input dir="ltr" inputMode="numeric" className="mt-1 w-full rounded-md border border-line px-3 py-2" value={row[room]} onChange={(event) => update(row.id, { [room]: event.target.value })} />
                   </label>
                 ))}

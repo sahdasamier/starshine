@@ -57,8 +57,8 @@ Fields on the booking:
 | Phone | Yes | Egyptian mobile. See below |
 | Departure | Yes | A choice from the agency trip list: the fixed dates, Sha'ban, Ramadan, the last 10 days of Ramadan, or a date already added. Other opens a calendar, and that day is saved for every later file |
 | Room type | Yes | One of Double, Triple, Quad, Quint. One room type for the whole booking. It does not set the price |
-| Trip total | Filled from the program | Double, Triple, and Quad take the price of the chosen program. A quint room has no listed price, so its total stays empty until accounting enters one |
-| Umrah program | Yes | Chosen from the program list. The admin can add a program, remove one, and edit its names, hotels, and double, triple, and quad prices. A quint room has no listed price |
+| Trip total | Filled from the program | Double, Triple, Quad, and Quint take the price of the chosen program. Accounting shows that price. A quint price can be left empty, and then accounting shows the program's other room prices so one can be saved for the file |
+| Umrah program | Yes | Chosen from the program list. The admin can add a program, remove one, and edit its names, hotels, and double, triple, quad, and quint prices |
 | Hotel name | No | Optional. The auditor types it while the file is in Audit. The admin can change it on any file |
 | Source | Yes | Marketer, Office, or a type added earlier. Other opens a text field, and saving stores that type in the `referralTypes` collection |
 | Referrer name | Yes | The person or office who brought the customer |
