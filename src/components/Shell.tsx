@@ -7,7 +7,7 @@ import { CloseIcon, MenuIcon } from './icons'
 import { roleKey } from './ui'
 
 const desktopLink = ({ isActive }: { isActive: boolean }) =>
-  `rounded-md px-3 py-2 text-sm font-semibold ${isActive ? 'bg-deep text-white' : 'text-deep hover:bg-paper'}`
+  `rounded-full px-3 py-2 text-sm font-semibold ${isActive ? 'bg-gold text-deep' : 'text-white/85 hover:bg-white/10 hover:text-white'}`
 
 const menuLink = ({ isActive }: { isActive: boolean }) =>
   `flex min-h-11 items-center rounded-md px-3 text-sm font-semibold ${isActive ? 'bg-deep text-white' : 'text-deep hover:bg-paper'}`
@@ -46,10 +46,10 @@ export function Shell() {
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-line bg-card pt-[env(safe-area-inset-top)]">
-        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">
-          <NavLink to={home} className="shrink-0">
-            <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="h-12 w-auto bg-white object-contain sm:h-16" />
+      <header className="sticky top-0 z-30 border-b-2 border-gold bg-deep pt-[env(safe-area-inset-top)] text-white">
+        <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-2.5">
+          <NavLink to={home} className="shrink-0 rounded-lg bg-white px-2 py-1">
+            <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="h-10 w-auto object-contain sm:h-12" />
           </NavLink>
           <nav className="hidden min-w-0 items-center gap-1 xl:flex">
             {links.map((link) => (
@@ -61,19 +61,19 @@ export function Shell() {
           <div className="ms-auto hidden items-center gap-2 text-sm xl:flex">
             <div className="text-end">
               <div className="font-semibold">{profile.displayName}</div>
-              <div className="text-xs text-muted">{t(roleKey(profile.role))}</div>
+              <div className="text-xs text-gold">{t(roleKey(profile.role))}</div>
             </div>
-            <button type="button" className="min-h-11 rounded-md border border-line px-3 py-2 font-semibold text-deep" onClick={() => void toggleLanguage()}>
+            <button type="button" className="min-h-11 rounded-full border border-white/30 px-3 py-2 font-semibold text-white" onClick={() => void toggleLanguage()}>
               {t('language')}
             </button>
-            <button type="button" className="min-h-11 rounded-md bg-deep px-3 py-2 font-semibold text-white" onClick={() => void signOutUser()}>
+            <button type="button" className="min-h-11 rounded-full bg-gold px-3 py-2 font-semibold text-deep" onClick={() => void signOutUser()}>
               {t('signOut')}
             </button>
           </div>
           <div className="relative ms-auto xl:hidden" ref={menuRef}>
             <button
               type="button"
-              className="inline-flex size-11 items-center justify-center rounded-md border border-line text-deep"
+              className="inline-flex size-11 items-center justify-center rounded-full border border-white/30 text-white"
               aria-expanded={menuOpen}
               aria-controls="site-menu"
               aria-label={menuOpen ? t('cancel') : t('menu')}
@@ -82,7 +82,7 @@ export function Shell() {
               {menuOpen ? <CloseIcon /> : <MenuIcon />}
             </button>
             {menuOpen && (
-              <div id="site-menu" className="absolute end-0 z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-line bg-card p-2 shadow-lg">
+              <div id="site-menu" className="absolute end-0 z-40 mt-2 w-64 max-w-[calc(100vw-2rem)] rounded-xl border border-gold/40 bg-card p-2 text-ink shadow-lg">
                 <p className="px-3 py-2 text-sm font-semibold">
                   {profile.displayName}
                   <span className="ms-2 text-xs font-medium text-muted">{t(roleKey(profile.role))}</span>
@@ -108,7 +108,7 @@ export function Shell() {
         </div>
       </header>
       {menuOpen && <button type="button" className="fixed inset-0 z-20 xl:hidden" aria-label={t('cancel')} onClick={() => setMenuOpen(false)} />}
-      <main className={`mx-auto min-w-0 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] ${location.pathname === '/history' || location.pathname === '/trips' ? 'max-w-none' : 'max-w-6xl'}`}>
+      <main className={`mx-auto min-w-0 px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] ${location.pathname === '/history' || location.pathname === '/trips' || location.pathname === '/queue' ? 'max-w-none' : 'max-w-6xl'}`}>
         <Suspense fallback={<p className="text-muted">{t('loading')}</p>}>
           <Outlet />
         </Suspense>

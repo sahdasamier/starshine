@@ -369,57 +369,58 @@ export function BookingTable({
   if (rows.length === 0) return <p className="px-4 py-10 text-center text-muted">{empty}</p>
   return (
     <>
-      <ul className="divide-y divide-line md:hidden">
+      <ul className="divide-y divide-gold/30 md:hidden">
         {rows.map((booking) => {
           const total = bookingTotalPiasters(booking, programs)
           const percent = paidPercent(total, booking.paidPiasters)
+          const withdrawn = booking.bookingStatus === 'withdrawn'
           return (
-            <li key={booking.id} className="space-y-3 px-4 py-4">
+            <li key={booking.id} className={`space-y-3 px-4 py-4 ${withdrawn ? 'bg-red-50' : 'bg-white'}`}>
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className={`num text-lg font-semibold text-deep ${booking.bookingStatus === 'withdrawn' ? 'line-through' : ''}`}>{booking.fileNumber}</p>
-                  <p className={`truncate font-medium ${booking.bookingStatus === 'withdrawn' ? 'text-danger line-through' : ''}`}>{booking.contactName}</p>
+                  <p className={`num text-lg font-semibold text-deep ${withdrawn ? 'line-through' : ''}`}>{booking.fileNumber}</p>
+                  <p className={`truncate font-medium ${withdrawn ? 'text-danger line-through' : ''}`}>{booking.contactName}</p>
                   {booking.bookingStatus === 'withdrawn' && <p className="mt-1 w-fit rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">{t('statusWithdrawn')}</p>}
                 </div>
                 <span className="flex shrink-0 items-center gap-3">
                   {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
-                  <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
+                  <Link to={`/bookings/${booking.id}`} className="font-semibold text-gold">
                     {t('open')}
                   </Link>
                 </span>
               </div>
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
                 <div>
                   <dt className="text-xs text-muted">{t('stageColumn')}</dt>
-                  <dd>{t(stageKey(booking.stage))}</dd>
+                  <dd className="mt-0.5 font-medium">{t(stageKey(booking.stage))}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted">{t('phone')}</dt>
-                  <dd className="num">{displayPhone(booking.phone)}</dd>
+                  <dd className="mt-0.5 font-medium"><span className="num">{displayPhone(booking.phone)}</span></dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted">{t('departureDate')}</dt>
-                  <dd className="num">{departureLabel(booking.departureDate, t)}</dd>
+                  <dd className="mt-0.5 font-medium"><span className="num">{departureLabel(booking.departureDate, t)}</span></dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted">{t('paidPercent')}</dt>
-                  <dd className="num">{percent == null ? t('emptyMoney') : `${percent}%`}</dd>
+                  <dd className="mt-0.5 font-medium"><span className="num">{percent == null ? t('emptyMoney') : `${percent}%`}</span></dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted">{t('programType')}</dt>
-                  <dd>{t(programKey(booking.programType))}</dd>
+                  <dd className="mt-0.5 font-medium">{t(programKey(booking.programType))}</dd>
                 </div>
                 <div>
                   <dt className="text-xs text-muted">{t('paymentPlan')}</dt>
-                  <dd>{t(planKey(booking.paymentPlan))}</dd>
+                  <dd className="mt-0.5 font-medium">{t(planKey(booking.paymentPlan))}</dd>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <dt className="text-xs text-muted">{t('umrahProgram')}</dt>
-                  <dd>{packageName(booking, language, programs) || t('emptyMoney')}</dd>
+                  <dd className="mt-0.5 font-medium">{packageName(booking, language, programs) || t('emptyMoney')}</dd>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <dt className="text-xs text-muted">{t('total')}</dt>
-                  <dd className="num">{total == null ? t('emptyMoney') : formatMoney(total, language)}</dd>
+                  <dd className="mt-0.5 text-base font-semibold text-deep"><span className="num">{total == null ? t('emptyMoney') : formatMoney(total, language)}</span></dd>
                 </div>
               </dl>
               <Marks booking={booking} />
@@ -428,45 +429,47 @@ export function BookingTable({
         })}
       </ul>
       <div className="hidden overflow-x-auto md:block">
-      <table className="w-full min-w-[720px] text-sm">
-        <thead className="bg-paper text-start text-muted">
+      <table className="w-full min-w-[880px] border-separate border-spacing-0 text-sm">
+        <thead className="bg-deep text-start text-white">
           <tr>
             {[t('file'), t('stageColumn'), t('contactName'), t('phone'), t('departureDate'), t('umrahProgram'), t('programType'), t('paymentPlan'), t('total'), t('paidPercent'), ''].map((heading) => (
-              <th key={heading || 'open'} className="px-3 py-2 font-medium">
+              <th key={heading || 'open'} className="border-b-2 border-gold px-3 py-3 font-semibold">
                 {heading}
               </th>
             ))}
           </tr>
         </thead>
         <tbody>
-          {rows.map((booking) => {
+          {rows.map((booking, index) => {
             const total = bookingTotalPiasters(booking, programs)
             const percent = paidPercent(total, booking.paidPiasters)
+            const withdrawn = booking.bookingStatus === 'withdrawn'
+            const stripe = withdrawn ? 'bg-red-50' : index % 2 === 1 ? 'bg-paper' : 'bg-white'
             return (
-              <tr key={booking.id} className="border-t border-line">
-                <td className={`num px-3 py-3 font-semibold text-deep ${booking.bookingStatus === 'withdrawn' ? 'line-through' : ''}`}>{booking.fileNumber}</td>
-                <td className="px-3 py-3">
-                  <div>{t(stageKey(booking.stage))}</div>
-                  {booking.bookingStatus === 'withdrawn' && <div className="mt-1 w-fit rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">{t('statusWithdrawn')}</div>}
+              <tr key={booking.id} className={stripe}>
+                <td className={`num border-b border-gold/30 px-3 py-3 font-semibold text-deep ${withdrawn ? 'line-through' : ''}`}>{booking.fileNumber}</td>
+                <td className="border-b border-gold/30 px-3 py-3">
+                  <div className={`w-fit rounded-full px-2 py-0.5 text-xs font-semibold ${booking.stage === 'completed' ? 'bg-ok/15 text-ok' : 'bg-deep/10 text-deep'}`}>{t(stageKey(booking.stage))}</div>
+                  {withdrawn && <div className="mt-1 w-fit rounded-full bg-danger/10 px-2 py-0.5 text-xs font-semibold text-danger">{t('statusWithdrawn')}</div>}
                 </td>
-                <td className={`px-3 py-3 ${booking.bookingStatus === 'withdrawn' ? 'text-danger line-through' : ''}`}>{booking.contactName}</td>
-                <td className="num px-3 py-3">{displayPhone(booking.phone)}</td>
-                <td className="num px-3 py-3">{departureLabel(booking.departureDate, t)}</td>
-                <td className="px-3 py-3">{packageName(booking, language, programs) || t('emptyMoney')}</td>
-                <td className="px-3 py-3">{t(programKey(booking.programType))}</td>
-                <td className="px-3 py-3">{t(planKey(booking.paymentPlan))}</td>
-                <td className="num px-3 py-3">{total == null ? t('emptyMoney') : formatMoney(total, language)}</td>
-                <td className="num px-3 py-3">
+                <td className={`border-b border-gold/30 px-3 py-3 ${withdrawn ? 'text-danger line-through' : ''}`}>{booking.contactName}</td>
+                <td className="num border-b border-gold/30 px-3 py-3">{displayPhone(booking.phone)}</td>
+                <td className="num border-b border-gold/30 px-3 py-3">{departureLabel(booking.departureDate, t)}</td>
+                <td className="border-b border-gold/30 px-3 py-3">{packageName(booking, language, programs) || t('emptyMoney')}</td>
+                <td className="border-b border-gold/30 px-3 py-3">{t(programKey(booking.programType))}</td>
+                <td className="border-b border-gold/30 px-3 py-3">{t(planKey(booking.paymentPlan))}</td>
+                <td className="num border-b border-gold/30 px-3 py-3 font-semibold text-deep">{total == null ? t('emptyMoney') : formatMoney(total, language)}</td>
+                <td className="num border-b border-gold/30 px-3 py-3">
                   <div>{percent == null ? t('emptyMoney') : `${percent}%`}</div>
                   <div className="text-xs text-muted">
                     {booking.totalPiasters == null ? '' : formatMoney(booking.paidPiasters, language)}
                   </div>
                 </td>
-                <td className="px-3 py-3">
+                <td className="border-b border-gold/30 px-3 py-3">
                   <div className="flex items-center justify-end gap-2">
                     <Marks booking={booking} />
                     {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
-                    <Link to={`/bookings/${booking.id}`} className="font-semibold text-blue">
+                    <Link to={`/bookings/${booking.id}`} className="font-semibold text-gold">
                       {t('open')}
                     </Link>
                   </div>

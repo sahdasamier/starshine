@@ -211,21 +211,23 @@ export function BookingPage() {
           )}
         </div>
 
-        <div className="rounded-2xl border border-line bg-card p-4">
-          <h2 className="font-semibold text-deep">{t('paidPercent')}</h2>
-          <p className="num mt-2 text-3xl font-semibold">{percent == null ? t('emptyMoney') : `${percent}%`}</p>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('total')}</dt>
-              <dd className="num text-end">
+        <div className="overflow-hidden rounded-2xl border border-gold/40 bg-card shadow-sm">
+          <div className="bg-deep px-4 py-4 text-white">
+            <p className="text-xs font-semibold tracking-wide text-gold">{t('paidPercent')}</p>
+            <p className="mt-1 text-4xl font-semibold"><span className="num">{percent == null ? t('emptyMoney') : `${percent}%`}</span></p>
+          </div>
+          <dl className="grid grid-cols-2 gap-3 bg-paper px-4 py-3 text-sm sm:grid-cols-3">
+            <div className={shownTotal == null && program ? 'col-span-2 sm:col-span-3' : ''}>
+              <dt className="text-xs text-muted">{t('total')}</dt>
+              <dd className="mt-1 text-base font-semibold text-deep">
                 {shownTotal == null ? (
                   program ? (
-                    <span className="flex flex-col items-end gap-1">
+                    <span className="flex flex-col gap-1 text-sm font-normal text-muted">
                       <span>{t('emptyMoney')}</span>
                       {(['quad', 'triple', 'double', 'quint'] as const).map((room) =>
                         program.prices[room] == null ? null : (
-                          <span key={room} className="text-xs font-normal text-muted">
-                            {t(programKey(room))} · {formatMoney(program.prices[room] * 100, language)}
+                          <span key={room}>
+                            {t(programKey(room))} · <span className="num">{formatMoney(program.prices[room] * 100, language)}</span>
                           </span>
                         ),
                       )}
@@ -234,21 +236,21 @@ export function BookingPage() {
                     t('emptyMoney')
                   )
                 ) : (
-                  formatMoney(shownTotal, language)
+                  <span className="num">{formatMoney(shownTotal, language)}</span>
                 )}
               </dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('amountPaid')}</dt>
-              <dd className="num">{formatMoney(booking.paidPiasters, language)}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('amountPaid')}</dt>
+              <dd className="mt-1 text-base font-semibold text-deep"><span className="num">{formatMoney(booking.paidPiasters, language)}</span></dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('remaining')}</dt>
-              <dd className="num">{remaining == null ? t('emptyMoney') : formatMoney(remaining, language)}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('remaining')}</dt>
+              <dd className="mt-1 text-base font-semibold text-deep"><span className="num">{remaining == null ? t('emptyMoney') : formatMoney(remaining, language)}</span></dd>
             </div>
           </dl>
           {(canEditPrice || canEditPaid) && (
-            <div className="mt-4 space-y-3 border-t border-line pt-4">
+            <div className="space-y-3 border-t border-gold/30 px-4 py-4">
               {canEditPrice && (
                 <>
                   <label className="block text-sm font-medium">
