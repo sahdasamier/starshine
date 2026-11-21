@@ -7,9 +7,8 @@ import {
   persistentLocalCache,
   persistentMultipleTabManager,
 } from 'firebase/firestore'
-import { connectFunctionsEmulator, getFunctions } from 'firebase/functions'
 
-const app = initializeApp({
+export const app = initializeApp({
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
@@ -18,10 +17,10 @@ const app = initializeApp({
 
 export const auth = getAuth(app)
 
-const useEmulator = import.meta.env.VITE_USE_EMULATOR === 'true'
+export const usingEmulator = import.meta.env.VITE_USE_EMULATOR === 'true'
 
 function openFirestore() {
-  if (useEmulator) return getFirestore(app)
+  if (usingEmulator) return getFirestore(app)
   try {
     return initializeFirestore(app, {
       localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
@@ -33,13 +32,11 @@ function openFirestore() {
 }
 
 export const db = openFirestore()
-export const functions = getFunctions(app, 'europe-west1')
 
 const globalScope = globalThis as typeof globalThis & { __starshineEmulator?: boolean }
 
-if (useEmulator && !globalScope.__starshineEmulator) {
+if (usingEmulator && !globalScope.__starshineEmulator) {
   globalScope.__starshineEmulator = true
   connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true })
   connectFirestoreEmulator(db, '127.0.0.1', 8080)
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001)
 }

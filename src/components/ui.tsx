@@ -484,6 +484,100 @@ export function BookingTable({
   )
 }
 
+export function AccountingTable({ bookings, empty, onRemove }: { bookings: ClientBooking[]; empty: string; onRemove?: (booking: ClientBooking) => void }) {
+  const { t, language } = useI18n()
+  const { programs } = usePrograms()
+  const rows = [...bookings].sort(compareBookings)
+  if (rows.length === 0) return <p className="px-4 py-10 text-center text-muted">{empty}</p>
+  return (
+    <>
+      <ul className="divide-y divide-gold/30 md:hidden">
+        {rows.map((booking) => {
+          const total = bookingTotalPiasters(booking, programs)
+          const unsaved = booking.totalPiasters == null && total != null
+          const missing = total == null
+          const remaining = total == null ? null : total - booking.paidPiasters
+          const percent = paidPercent(total, booking.paidPiasters)
+          return (
+            <li key={booking.id} className={`space-y-3 px-4 py-4 ${missing ? 'bg-gold/10' : 'bg-white'}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="num text-lg font-semibold text-deep">{booking.fileNumber}</p>
+                  <p className="truncate font-medium">{booking.contactName}</p>
+                  {(missing || unsaved) && <p className="mt-1 w-fit rounded-full bg-gold px-2 py-0.5 text-xs font-semibold text-deep">{missing ? t('needsTotal') : t('needsSave')}</p>}
+                </div>
+                <span className="flex items-center gap-2">
+                  {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
+                  <Link to={`/bookings/${booking.id}`} className="font-semibold text-gold">{t('open')}</Link>
+                </span>
+              </div>
+              <p className="text-sm">{packageName(booking, language, programs) || t('emptyMoney')} · {t(programKey(booking.programType))}</p>
+              <dl className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <dt className="text-xs text-muted">{t('total')}</dt>
+                  <dd className="mt-0.5 font-semibold text-deep"><span className="num">{total == null ? t('emptyMoney') : formatMoney(total, language)}</span></dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('amountPaid')}</dt>
+                  <dd className="mt-0.5 font-semibold text-deep"><span className="num">{formatMoney(booking.paidPiasters, language)}</span></dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-muted">{t('remaining')}</dt>
+                  <dd className="mt-0.5 font-semibold text-deep"><span className="num">{remaining == null ? t('emptyMoney') : formatMoney(remaining, language)}</span></dd>
+                </div>
+              </dl>
+              <p className="text-xs text-muted"><span className="num">{percent == null ? t('emptyMoney') : `${percent}%`}</span> · {t(planKey(booking.paymentPlan))} · <span className="num">{departureLabel(booking.departureDate, t)}</span></p>
+            </li>
+          )
+        })}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
+        <table className="w-full min-w-[960px] border-separate border-spacing-0 text-sm">
+          <thead className="bg-deep text-start text-white">
+            <tr>
+              {[t('file'), t('contactName'), t('umrahProgram'), t('programType'), t('paymentPlan'), t('total'), t('amountPaid'), t('remaining'), t('paidPercent'), ''].map((heading) => (
+                <th key={heading || 'open'} className="border-b-2 border-gold px-3 py-3 font-semibold">{heading}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((booking, index) => {
+              const total = bookingTotalPiasters(booking, programs)
+              const unsaved = booking.totalPiasters == null && total != null
+              const missing = total == null
+              const remaining = total == null ? null : total - booking.paidPiasters
+              const percent = paidPercent(total, booking.paidPiasters)
+              const stripe = missing ? 'bg-gold/10' : index % 2 === 1 ? 'bg-paper' : 'bg-white'
+              return (
+                <tr key={booking.id} className={stripe}>
+                  <td className="num border-b border-gold/30 px-3 py-3 font-semibold text-deep">{booking.fileNumber}</td>
+                  <td className="border-b border-gold/30 px-3 py-3">
+                    <div>{booking.contactName}</div>
+                    {(missing || unsaved) && <div className="mt-1 w-fit rounded-full bg-gold px-2 py-0.5 text-xs font-semibold text-deep">{missing ? t('needsTotal') : t('needsSave')}</div>}
+                  </td>
+                  <td className="border-b border-gold/30 px-3 py-3">{packageName(booking, language, programs) || t('emptyMoney')}</td>
+                  <td className="border-b border-gold/30 px-3 py-3">{t(programKey(booking.programType))}</td>
+                  <td className="border-b border-gold/30 px-3 py-3">{t(planKey(booking.paymentPlan))}</td>
+                  <td className="num border-b border-gold/30 px-3 py-3 font-semibold text-deep">{total == null ? t('emptyMoney') : formatMoney(total, language)}</td>
+                  <td className="num border-b border-gold/30 px-3 py-3">{formatMoney(booking.paidPiasters, language)}</td>
+                  <td className="num border-b border-gold/30 px-3 py-3">{remaining == null ? t('emptyMoney') : formatMoney(remaining, language)}</td>
+                  <td className="num border-b border-gold/30 px-3 py-3">{percent == null ? t('emptyMoney') : `${percent}%`}</td>
+                  <td className="border-b border-gold/30 px-3 py-3">
+                    <span className="inline-flex items-center gap-2">
+                      {onRemove && <TrashButton label={t('removeFile')} onClick={() => onRemove(booking)} />}
+                      <Link to={`/bookings/${booking.id}`} className="font-semibold text-gold">{t('open')}</Link>
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
 export function ScheduleSheet({
   bookings,
   empty,

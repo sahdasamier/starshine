@@ -1,12 +1,11 @@
-import { lazy } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { homeForRole } from '@shared/domain'
 import { Shell } from './components/Shell'
 import { useAuth } from './lib/auth'
 import { BookingsProvider } from './lib/bookings'
 import { useI18n } from './lib/i18n'
-import { LoginPage } from './pages/LoginPage'
-
+const LoginPage = lazy(() => import('./pages/LoginPage').then((m) => ({ default: m.LoginPage })))
 const QueuePage = lazy(() => import('./pages/QueuePage').then((m) => ({ default: m.QueuePage })))
 const TripsPage = lazy(() => import('./pages/TripsPage').then((m) => ({ default: m.TripsPage })))
 const HistoryPage = lazy(() => import('./pages/HistoryPage').then((m) => ({ default: m.HistoryPage })))
@@ -25,6 +24,21 @@ function Home() {
 function Protected() {
   const { user, profile, ready } = useAuth()
   const { t } = useI18n()
+  useEffect(() => {
+    if (!profile) return
+    const warm = () => {
+      void import('./pages/QueuePage')
+      void import('./pages/HistoryPage')
+      void import('./pages/TripsPage')
+      void import('./pages/BookingPage')
+    }
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(warm)
+      return () => cancelIdleCallback(id)
+    }
+    const id = window.setTimeout(warm, 400)
+    return () => window.clearTimeout(id)
+  }, [profile])
   if (!ready) return <p className="p-10 text-center text-muted">{t('loading')}</p>
   if (!user || !profile) return <Navigate to="/login" replace />
   return (
@@ -47,7 +61,9 @@ function Missing() {
 }
 
 export function App() {
+  const { t } = useI18n()
   return (
+    <Suspense fallback={<p className="p-10 text-center text-muted">{t('loading')}</p>}>
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<Protected />}>
@@ -64,5 +80,6 @@ export function App() {
       </Route>
       <Route path="*" element={<Missing />} />
     </Routes>
+    </Suspense>
   )
 }

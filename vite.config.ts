@@ -15,8 +15,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes('@firebase/functions') || id.includes('/firebase/functions/')) return 'functions'
           if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) return 'firebase'
-          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router')) return 'react'
+          if (/node_modules\/(react|react-dom|scheduler|react-router|react-router-dom)\//.test(id)) return 'react'
         },
       },
     },

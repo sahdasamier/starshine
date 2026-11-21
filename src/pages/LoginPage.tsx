@@ -106,7 +106,7 @@ export function LoginPage() {
           {t('language')}
         </button>
       </div>
-      <img src="/logo.jpg" alt="Star Shine Tours Aswan" className="mb-6 w-full max-w-xs sm:max-w-sm" />
+      <img src="/logo.webp" alt="Star Shine Tours Aswan" width={480} height={511} className="mb-6 w-full max-w-xs sm:max-w-sm" />
       <div className="w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-sm">
         <h1 className="text-xl font-semibold text-deep">{needsBootstrap ? t('createAdmin') : recovering ? t('resetPassword') : t('signIn')}</h1>
         {needsBootstrap && <p className="mt-2 text-sm text-muted">{t('setupLead')}</p>}

@@ -136,79 +136,86 @@ export function BookingPage() {
 
   return (
     <article className="space-y-5">
-      <header className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-gold">{t('file')}</p>
-          <h1 className="num text-4xl font-semibold text-deep">{booking.fileNumber}</h1>
-          <p className="mt-1 text-sm font-semibold">{t(stageKey(booking.stage))}</p>
-          {booking.createdByName && <p className="mt-1 text-sm text-muted">{t('createdBy')}: {booking.createdByName}</p>}
-          {booking.bookingStatus === 'withdrawn' && <p className="mt-2 w-fit rounded-full bg-danger/10 px-3 py-1 text-sm font-semibold text-danger">{t(statusKey('withdrawn'))}</p>}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Marks booking={booking} />
-          {profile.role === 'admin' && (
-            <TrashButton
-              label={t('removeFile')}
-              className="border border-danger"
-              onClick={() => removal.ask(t('removeFile'), t('confirmRemoveFile'), async () => {
-                await call('deleteBooking', { id: booking.id })
-                navigate('/queue')
-              })}
-            />
-          )}
+      <header className="overflow-hidden rounded-2xl border border-gold/40 bg-deep text-white shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-5">
+          <div>
+            <p className="text-xs font-semibold tracking-wide text-gold">{t('file')}</p>
+            <h1 className="mt-1 text-4xl font-semibold"><span className="num">{booking.fileNumber}</span></h1>
+            <p className="mt-2 text-xl font-semibold">{booking.contactName}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+              <span className="rounded-full bg-gold px-3 py-1 text-xs font-semibold text-deep">{t(stageKey(booking.stage))}</span>
+              {booking.bookingStatus === 'withdrawn' && <span className="rounded-full bg-danger px-3 py-1 text-xs font-semibold text-white">{t(statusKey('withdrawn'))}</span>}
+              {booking.createdByName && <span className="text-white/80">{t('createdBy')}: {booking.createdByName}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Marks booking={booking} />
+            {profile.role === 'admin' && (
+              <TrashButton
+                label={t('removeFile')}
+                className="bg-white"
+                onClick={() => removal.ask(t('removeFile'), t('confirmRemoveFile'), async () => {
+                  await call('deleteBooking', { id: booking.id })
+                  navigate('/queue')
+                })}
+              />
+            )}
+          </div>
         </div>
       </header>
 
       <section className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-line bg-card p-4">
-          <h2 className="font-semibold text-deep">{booking.contactName}</h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('phone')}</dt>
-              <dd className="num">{displayPhone(booking.phone)}</dd>
+        <div className="overflow-hidden rounded-2xl border border-gold/40 bg-card shadow-sm">
+          <div className="flex items-center justify-between gap-3 border-b border-gold/30 bg-paper px-4 py-3">
+            <h2 className="font-semibold text-deep">{booking.contactName}</h2>
+            {canEditDetails && (
+              <Link to={`/bookings/${booking.id}/edit`} className="inline-flex min-h-11 items-center font-semibold text-gold">
+                {t('edit')}
+              </Link>
+            )}
+          </div>
+          <dl className="grid gap-4 p-4 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs text-muted">{t('phone')}</dt>
+              <dd className="mt-0.5 font-medium"><span className="num">{displayPhone(booking.phone)}</span></dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('departureDate')}</dt>
-              <dd className="num">{departureLabel(booking.departureDate, t)}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('departureDate')}</dt>
+              <dd className="mt-0.5 font-medium"><span className="num">{departureLabel(booking.departureDate, t)}</span></dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('programType')}</dt>
-              <dd>{t(programKey(booking.programType))}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('programType')}</dt>
+              <dd className="mt-0.5 font-medium">{t(programKey(booking.programType))}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('umrahProgram')}</dt>
-              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.nameAr : packageById(booking.packageId, programs)?.nameEn) : t('emptyMoney')}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('paymentPlan')}</dt>
+              <dd className="mt-0.5 font-medium">{t(planKey(booking.paymentPlan))}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('makkahHotel')}</dt>
-              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.makkahAr : packageById(booking.packageId, programs)?.makkahEn) : t('emptyMoney')}</dd>
+            <div className="sm:col-span-2">
+              <dt className="text-xs text-muted">{t('umrahProgram')}</dt>
+              <dd className="mt-0.5 font-medium">{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.nameAr : packageById(booking.packageId, programs)?.nameEn) : t('emptyMoney')}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('madinahHotel')}</dt>
-              <dd>{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.madinahAr : packageById(booking.packageId, programs)?.madinahEn) : t('emptyMoney')}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('makkahHotel')}</dt>
+              <dd className="mt-0.5 font-medium">{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.makkahAr : packageById(booking.packageId, programs)?.makkahEn) : t('emptyMoney')}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('referralType')}</dt>
-              <dd>{booking.referralType ? referralLabel(booking.referralType, t) : t('emptyMoney')}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('madinahHotel')}</dt>
+              <dd className="mt-0.5 font-medium">{booking.packageId ? (language === 'ar' ? packageById(booking.packageId, programs)?.madinahAr : packageById(booking.packageId, programs)?.madinahEn) : t('emptyMoney')}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('referrerName')}</dt>
-              <dd>{booking.referrerName || t('emptyMoney')}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('referralType')}</dt>
+              <dd className="mt-0.5 font-medium">{booking.referralType ? referralLabel(booking.referralType, t) : t('emptyMoney')}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('bookingStatus')}</dt>
-              <dd className={booking.bookingStatus === 'withdrawn' ? 'font-semibold text-danger' : ''}>{t(statusKey(booking.bookingStatus ?? 'confirmed'))}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('referrerName')}</dt>
+              <dd className="mt-0.5 font-medium">{booking.referrerName || t('emptyMoney')}</dd>
             </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted">{t('paymentPlan')}</dt>
-              <dd>{t(planKey(booking.paymentPlan))}</dd>
+            <div>
+              <dt className="text-xs text-muted">{t('bookingStatus')}</dt>
+              <dd className={`mt-0.5 font-medium ${booking.bookingStatus === 'withdrawn' ? 'text-danger' : ''}`}>{t(statusKey(booking.bookingStatus ?? 'confirmed'))}</dd>
             </div>
           </dl>
-          {canEditDetails && (
-            <Link to={`/bookings/${booking.id}/edit`} className="mt-4 inline-flex min-h-11 items-center font-semibold text-blue">
-              {t('edit')}
-            </Link>
-          )}
         </div>
 
         <div className="overflow-hidden rounded-2xl border border-gold/40 bg-card shadow-sm">
@@ -313,11 +320,11 @@ export function BookingPage() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-line bg-card p-4">
-        <h2 className="font-semibold text-deep">{t('pilgrims')}</h2>
-        <ul className="mt-3 divide-y divide-line">
+      <section className="overflow-hidden rounded-2xl border border-gold/40 bg-card shadow-sm">
+        <h2 className="border-b border-gold/30 bg-paper px-4 py-3 font-semibold text-deep">{t('pilgrims')}</h2>
+        <ul className="divide-y divide-gold/20">
           {booking.pilgrims.map((pilgrim) => (
-            <li key={pilgrim.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+            <li key={pilgrim.id} className="flex flex-wrap items-center justify-between gap-3 px-4 py-4">
               <span className="flex flex-wrap items-center gap-3">
                 <span className="font-medium">{pilgrim.name}</span>
                 <span className="rounded-full bg-paper px-2 py-1 text-xs font-semibold text-deep">{t(categoryKey(pilgrim.category ?? 'adult'))}</span>
@@ -327,6 +334,7 @@ export function BookingPage() {
                 {profile.role === 'admin' && (
                   <TrashButton
                     label={t('removePerson')}
+                    className="bg-paper"
                     onClick={() => removal.ask(t('removePerson'), t('confirmRemovePerson'), async () => {
                       const result = await call<{ deleted: boolean }>('removePilgrim', { id: booking.id, pilgrimId: pilgrim.id })
                       if (result.deleted) navigate('/queue')
@@ -369,16 +377,16 @@ export function BookingPage() {
 
       <section className="space-y-3">
         <div className="grid gap-4 md:grid-cols-2">
-          <label className="block rounded-2xl border border-line bg-card p-4 text-sm font-medium">
-            {t('customerNotes')}
-            <textarea rows={4} className="mt-2 w-full rounded-md border border-line px-3 py-2 font-normal" value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} />
+          <label className="block overflow-hidden rounded-2xl border border-gold/40 bg-card text-sm font-medium shadow-sm">
+            <span className="block border-b border-gold/30 bg-paper px-4 py-3">{t('customerNotes')}</span>
+            <textarea rows={4} className="w-full px-4 py-3 font-normal" value={customerNotes} onChange={(event) => setCustomerNotes(event.target.value)} />
           </label>
-          <label className="block rounded-2xl border border-line bg-card p-4 text-sm font-medium">
-            {t('internalNotes')}
-            <textarea rows={4} className="mt-2 w-full rounded-md border border-line px-3 py-2 font-normal" value={internalNotes} onChange={(event) => setInternalNotes(event.target.value)} />
+          <label className="block overflow-hidden rounded-2xl border border-gold/40 bg-card text-sm font-medium shadow-sm">
+            <span className="block border-b border-gold/30 bg-paper px-4 py-3">{t('internalNotes')}</span>
+            <textarea rows={4} className="w-full px-4 py-3 font-normal" value={internalNotes} onChange={(event) => setInternalNotes(event.target.value)} />
           </label>
         </div>
-        <button type="button" disabled={pending} className="min-h-11 w-full rounded-md border border-line px-3 py-2 text-sm font-semibold disabled:opacity-50 sm:w-auto" onClick={() => void run('setNotes', { customerNotes, internalNotes })}>
+        <button type="button" disabled={pending} className="min-h-11 w-full rounded-full bg-deep px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 sm:w-auto" onClick={() => void run('setNotes', { customerNotes, internalNotes })}>
           {t('save')}
         </button>
       </section>
@@ -437,7 +445,7 @@ export function BookingPage() {
           <p className="text-sm text-muted">{t('approveHint')}</p>
         )}
         {canReturn && previous && (
-          <div className="rounded-2xl border border-line bg-card p-4">
+          <div className="rounded-2xl border border-gold/40 bg-card p-4 shadow-sm">
             <label className="block text-sm font-medium">
               {t('reason')}
               <textarea className="mt-1 w-full rounded-md border border-line px-3 py-2" rows={3} value={reason} onChange={(event) => setReason(event.target.value)} />
@@ -455,9 +463,10 @@ export function BookingPage() {
       </section>
 
       {booking.returns.length > 0 && (
-        <section className="rounded-2xl border border-line bg-card p-4">
-          <h2 className="font-semibold text-deep">{t('history')}</h2>
-          <ol className="mt-3 space-y-3">
+        <section className="overflow-hidden rounded-2xl border border-gold/40 bg-card shadow-sm">
+          <h2 className="border-b border-gold/30 bg-paper px-4 py-3 font-semibold text-deep">{t('history')}</h2>
+          <div className="p-4">
+          <ol className="space-y-3">
             {booking.returns.map((note, index) => (
               <li key={`${note.at}-${index}`} className="border-s-2 border-gold ps-3 text-sm">
                 <p className="font-medium">{note.reason}</p>
@@ -470,6 +479,7 @@ export function BookingPage() {
               </li>
             ))}
           </ol>
+          </div>
         </section>
       )}
 
